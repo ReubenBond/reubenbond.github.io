@@ -1,3 +1,7 @@
+#Ignore tools
+tools/*
+#Ignore output files
+output/*
 
 #Ignore thumbnails created by Windows
 Thumbs.db
