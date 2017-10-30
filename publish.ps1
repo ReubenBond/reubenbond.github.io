@@ -17,6 +17,6 @@ Write-Host "adding"
 git add *
 Write-Host "committing"
 git commit -m "Update."
-Write-Host "pushing"
+Write-Host "pushing to '$repo'"
 git push --repo=$repo -f -v
 Write-Host "done"
