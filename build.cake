@@ -1,6 +1,5 @@
 #tool nuget:?package=Wyam
 #addin nuget:?package=Cake.Wyam
-#theme nuget:?package=Wyam.Blog.Stellar
 
 //////////////////////////////////////////////////////////////////////
 // ARGUMENTS
