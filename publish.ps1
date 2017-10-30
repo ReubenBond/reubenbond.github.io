@@ -5,7 +5,8 @@ param (
 )
 
 $localFolder = "gh-pages"
-git clone https://$($Token)@github.com/$($Repository).git --branch=gh-pages $localFolder
+$repo = "https://$($Token)@github.com/$($Repository).git"
+git clone $repo --branch=gh-pages $localFolder
 
 $from = "output\*"
 $to = $($localFolder)
@@ -17,5 +18,5 @@ git add *
 Write-Host "committing"
 git commit -m "Update."
 Write-Host "pushing"
-git push 
+git push --repo=$repo -f -v
 Write-Host "done"
