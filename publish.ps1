@@ -7,8 +7,8 @@ param (
 $localFolder = "gh-pages"
 git clone https://$($Token)@github.com/$($Repository).git --branch=gh-pages $localFolder
 
-$from = "$(System.DefaultWorkingDirectory)\output\*"
-$to = "$(System.DefaultWorkingDirectory)\$($localFolder)"  
+$from = "output\*"
+$to = $($localFolder)
 Copy-Item $from $to -recurse
 
 Push-Location $localFolder
