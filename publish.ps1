@@ -5,7 +5,7 @@ param (
 )
 
 $localFolder = "gh-pages"
-$repo = "https://$($Token)@github.com/$($Repository).git"
+$repo = "https://$($UserName):$($Token)@github.com/$($Repository).git"
 git clone $repo --branch=gh-pages $localFolder
 
 $from = "output\*"

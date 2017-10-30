@@ -3,7 +3,7 @@
 
 // Customize your settings and add new ones here
 Settings[Keys.Host] = "reubenbond.github.io";
-Settings[BlogKeys.Title] = "Blogabond";
+Settings[BlogKeys.Title] = "Reuben Bond";
 Settings[BlogKeys.Description] = "Welcome!";
 
 // Add any pipeline customizations here
