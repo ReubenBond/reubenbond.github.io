@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0">
+	<channel>
+		<title>Reuben Bond</title>
+		<link>http://reubenbond.github.io/</link>
+		<description>Welcome!</description>
+		<copyright>2017</copyright>
+		<pubDate>Mon, 30 Oct 2017 21:50:30 GMT</pubDate>
+		<lastBuildDate>Mon, 30 Oct 2017 21:50:30 GMT</lastBuildDate>
+		<item>
+			<title>First Post</title>
+			<link>http://reubenbond.github.io/posts/first-post</link>
+			<description>&lt;p&gt;This is my first post!&lt;/p&gt;</description>
+			<guid>http://reubenbond.github.io/posts/first-post</guid>
+			<pubDate>Fri, 01 Jan 2016 00:00:00 GMT</pubDate>
+			<content:encoded>&lt;p&gt;This is my first post!&lt;/p&gt;
+</content:encoded>
+		</item>
+	</channel>
+</rss>
