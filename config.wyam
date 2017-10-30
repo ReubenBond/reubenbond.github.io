@@ -2,8 +2,8 @@
 #theme Stellar
 
 // Customize your settings and add new ones here
-Settings[Keys.Host] = "host.com";
-Settings[BlogKeys.Title] = "My Blog";
+Settings[Keys.Host] = "reubenbond.github.io";
+Settings[BlogKeys.Title] = "Blogabond";
 Settings[BlogKeys.Description] = "Welcome!";
 
 // Add any pipeline customizations here
