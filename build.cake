@@ -1,5 +1,6 @@
 #tool nuget:?package=Wyam
 #addin nuget:?package=Cake.Wyam
+#theme nuget:?package=Wyam.Blog.Stellar
 
 //////////////////////////////////////////////////////////////////////
 // ARGUMENTS
@@ -17,7 +18,7 @@ Task("Build")
         Wyam(new WyamSettings
         {
             Recipe = "Blog",
-            Theme = "SolidSlate",
+            Theme = "Stellar",
             UpdatePackages = true
         });
     });
@@ -28,7 +29,7 @@ Task("Preview")
         Wyam(new WyamSettings
         {
             Recipe = "Blog",
-            Theme = "SolidSlate",
+            Theme = "Stellar",
             UpdatePackages = true,
             Preview = true,
             Watch = true
