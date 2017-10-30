@@ -12,7 +12,10 @@ $to = $($localFolder)
 Copy-Item $from $to -recurse
 
 Push-Location $localFolder
+Write-Host "adding"
 git add *
+Write-Host "committing"
 git commit -m "Update."
-git push
-Pop-Location
+Write-Host "pushing"
+git push 
+Write-Host "done"
