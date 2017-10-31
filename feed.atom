@@ -4,7 +4,7 @@
 	<id>http://reubenbond.github.io/</id>
 	<title>Reuben Bond</title>
 	<rights>2017</rights>
-	<updated>2017-10-31T06:11:12Z</updated>
+	<updated>2017-10-31T06:17:43Z</updated>
 	<subtitle>Write-Behind Blog</subtitle>
 	<entry>
 		<link href="http://reubenbond.github.io/posts/2017-Oct-31-version-tolerant-serializer" />
@@ -153,7 +153,7 @@ public enum ExtendedWireType : byte
 	<entry>
 		<link href="http://reubenbond.github.io/posts/2017-Oct-30-setting-up-wyam" />
 		<id>http://reubenbond.github.io/posts/2017-Oct-30-setting-up-wyam</id>
-		<title>Wyam Through Visual Studio Online</title>
+		<title>Deploying Wyam Via Visual Studio Online</title>
 		<updated>2017-10-30T00:00:00Z</updated>
 		<content>&lt;p&gt;Here goes nothing! This blog is built with &lt;a href="https://twitter.com/daveaglick"&gt;Dave Glick's&lt;/a&gt; &lt;a href="https://wyam.io/"&gt;Wyam&lt;/a&gt; static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages.&lt;/p&gt;
 &lt;p&gt;Here's how I set it up.&lt;/p&gt;
@@ -225,8 +225,26 @@ This post is about fists and how clumpy they always are.
 &lt;pre&gt;&lt;code&gt;cake --settings_skipverification=true -target=Preview
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;Open a browser to &lt;a href="http://localhost:5080"&gt;http://localhost:5080&lt;/a&gt; and see the results.&lt;/p&gt;
-&lt;h1 id="deploying-to-github-pages-through-visual-studio-online"&gt;Deploying to GitHub Pages through Visual Studio Online&lt;/h1&gt;
-&lt;p&gt;Now on to the fun part.&lt;/p&gt;
+&lt;h1 id="automating-deployment"&gt;Automating Deployment&lt;/h1&gt;
+&lt;p&gt;Add a new file called &lt;code&gt;publish.ps1&lt;/code&gt; to the root of your repo with these contents:&lt;/p&gt;
+&lt;pre&gt;&lt;code class="language-powershell"&gt;param (
+  [string]$Token,
+  [string]$UserName,
+  [string]$Repository
+)
+
+$localFolder = &amp;quot;gh-pages&amp;quot;
+$repo = &amp;quot;https://$($UserName):$($Token)&amp;#64;github.com/$($Repository).git&amp;quot;
+git clone $repo --branch=master $localFolder
+
+$from = &amp;quot;output\*&amp;quot;
+$to = $($localFolder)
+Copy-Item $from $to -recurse
+
+Set-Location $localFolder
+git commit -am.
+git push
+&lt;/code&gt;&lt;/pre&gt;
 </content>
 		<summary>&lt;p&gt;Here goes nothing! This blog is built with &lt;a href="https://twitter.com/daveaglick"&gt;Dave Glick's&lt;/a&gt; &lt;a href="https://wyam.io/"&gt;Wyam&lt;/a&gt; static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages.&lt;/p&gt;</summary>
 	</entry>

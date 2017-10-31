@@ -5,7 +5,7 @@
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
 
-        <title>Reuben Bond - Wyam Through Visual Studio Online</title>
+        <title>Reuben Bond - Deploying Wyam Via Visual Studio Online</title>
         <meta name="description" content="Write-Behind Blog" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0">        
 
@@ -28,7 +28,7 @@
         <meta name="msapplication-tooltip" content="Reuben Bond" />
         <meta name="msapplication-starturl" content="/" />
 
-        <meta property="og:title" content="Reuben Bond - Wyam Through Visual Studio Online" />
+        <meta property="og:title" content="Reuben Bond - Deploying Wyam Via Visual Studio Online" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="http://reubenbond.github.io/posts/2017-Oct-30-setting-up-wyam" />
         <!-- TODO: More social graph meta tags -->
@@ -91,7 +91,7 @@
 
     
 <div class="post-heading">
-    <h1>Wyam Through Visual Studio Online</h1>
+    <h1>Deploying Wyam Via Visual Studio Online</h1>
     <div class="meta">        
 Published on Monday, October 30, 2017<br>    </div>
         <div class="tags">
@@ -181,8 +181,26 @@ This post is about fists and how clumpy they always are.
 <pre><code>cake --settings_skipverification=true -target=Preview
 </code></pre>
 <p>Open a browser to <a href="http://localhost:5080">http://localhost:5080</a> and see the results.</p>
-<h1 id="deploying-to-github-pages-through-visual-studio-online">Deploying to GitHub Pages through Visual Studio Online</h1>
-<p>Now on to the fun part.</p>
+<h1 id="automating-deployment">Automating Deployment</h1>
+<p>Add a new file called <code>publish.ps1</code> to the root of your repo with these contents:</p>
+<pre><code class="language-powershell">param (
+  [string]$Token,
+  [string]$UserName,
+  [string]$Repository
+)
+
+$localFolder = &quot;gh-pages&quot;
+$repo = &quot;https://$($UserName):$($Token)&#64;github.com/$($Repository).git&quot;
+git clone $repo --branch=master $localFolder
+
+$from = &quot;output\*&quot;
+$to = $($localFolder)
+Copy-Item $from $to -recurse
+
+Set-Location $localFolder
+git commit -am.
+git push
+</code></pre>
 
 
 
