@@ -1,8 +1,7 @@
 body {
-  font-family: 'Calibri', 'Times New Roman', serif;
+  font-family: 'Lora', 'Times New Roman', serif;
   font-size: 20px;
-  color: rgb(238, 237, 237);
-  background-color: #263860
+  color: #333333;
 }
 p {
   line-height: 1.5;
@@ -21,7 +20,7 @@ h6 {
   font-weight: 800;
 }
 a {
-  color: #25169e;
+  color: #333333;
 }
 a:hover,
 a:focus {
@@ -104,21 +103,21 @@ hr.small {
     /* when the user scrolls down, we hide the header right above the viewport */
     position: fixed;
     top: -61px;
-    background-color: #263860;
+    background-color: rgba(255, 255, 255, 0.9);
     border-bottom: 1px solid #f2f2f2;
     -webkit-transition: -webkit-transform 0.3s;
     -moz-transition: -moz-transform 0.3s;
     transition: transform 0.3s;
   }
   .navbar-custom.is-fixed .navbar-brand {
-    color: white;
+    color: #333333;
   }
   .navbar-custom.is-fixed .navbar-brand:hover,
   .navbar-custom.is-fixed .navbar-brand:focus {
-    color: white;
+    color: #337ab7;
   }
   .navbar-custom.is-fixed .nav li a {
-    color: white;
+    color: #333333;
   }
   .navbar-custom.is-fixed .nav li a:hover,
   .navbar-custom.is-fixed .nav li a:focus {
