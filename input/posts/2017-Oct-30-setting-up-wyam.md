@@ -3,11 +3,9 @@ Published: 10/30/2017
 Tags: ['Wyam', 'Visual Studio Online', 'Blog']
 ---
 
-Here goes nothing! This blog is built with [Dave Glick's](https://twitter.com/daveaglick) [Wyam](https://wyam.io/) static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages.
+Here goes nothing! This blog is built with [Dave Glick's](https://twitter.com/daveaglick) [Wyam](https://wyam.io/) static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages. Here's how to set up something similar.
 
-Here's how I set it up.
-
-# Preamble: Requirements
+# Prerequisites
  * A Visual Studio Online repository for your blog source.
    * You could have also VSO pull the source from GitHub or somewhere else instead, but I haven't covered that here.
  * A GitHub repository which will serve the compiled output via GitHub Pages.
@@ -78,7 +76,7 @@ Great! Try running it using Cake. Because Wyam targets an older version of Cake 
 ```
 cake --settings_skipverification=true -target=Preview
 ```
-Open a browser to http://localhost:5080 and see the results. Editing the file while cake is running the Preview should cause your browser to refresh whenever you save changes.
+Open a browser to http://localhost:5080 and see the results. The `Preview` target watches for file changes so it can automatically recompile & refresh your browser whenever you save changes.
 
 # Automating Deployment
 
