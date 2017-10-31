@@ -43,8 +43,19 @@
 
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:site" content="@@ReubenBond" />
-        <meta name="twitter:title" content="@Context.String(BlogKeys.Title)" />
-        <meta name="twitter:description" content="@Context.String(BlogKeys.Excerpt)" />
+        <meta name="twitter:title" content="@Model.String(BlogKeys.Title)" />
+        @{
+                if (!string.IsNullOrWhiteSpace(Model.String(BlogKeys.Excerpt))) {
+                        <meta name="twitter:description" content="@Model.String(BlogKeys.Excerpt)" />
+                }
+                else if (!string.IsNullOrWhiteSpace(Model.String(BlogKeys.Lead))) {
+                        <meta name="twitter:description" content="@Model.String(BlogKeys.Lead)" />
+                }
+                else
+                {
+                        <meta name="twitter:description" content="@Model.String(BlogKeys.Description)" />
+                }
+        }
         <meta name="twitter:image" content="@Model.String(BlogKeys.Image)" />
 
         <script src="@Context.GetLink("/assets/js/jquery.min.js")"></script>
