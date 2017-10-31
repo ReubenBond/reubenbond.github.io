@@ -113,17 +113,20 @@ Published on Monday, October 30, 2017<br>    </div>
 
 <p>Here goes nothing! This blog is built with <a href="https://twitter.com/daveaglick">Dave Glick's</a> <a href="https://wyam.io/">Wyam</a> static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages.</p>
 <p>Here's how I set it up.</p>
-<p>Requirements:</p>
+<h1 id="preamble-requirements">Preamble: Requirements</h1>
 <ul>
-<li>A Visual Studio Online repository for your blog source. You could have VSO pull the source from GitHub or somewhere else, instead.</li>
-<li>A GitHub pages repo. I created a repository called <a href="https://github.com/ReubenBond/reubenbond.github.io"><code>reubenbond.github.io</code></a> under my profile, <a href="https://github.com/ReubenBond/"><code>ReubenBond</code></a>. You'll be pushing compiled sources to the master branch of that repo.</li>
+<li>A Visual Studio Online repository for your blog source.
+<ul>
+<li>You could have also VSO pull the source from GitHub or somewhere else instead, but I haven't covered that here.</li>
+</ul>
+</li>
+<li>A GitHub repository which will serve the compiled output via GitHub Pages.
+<ul>
+<li>I created a repository called <a href="https://github.com/ReubenBond/reubenbond.github.io"><code>reubenbond.github.io</code></a> under my profile, <a href="https://github.com/ReubenBond/"><code>ReubenBond</code></a>.</li>
+</ul>
+</li>
 <li>Cake so you can test it out locally. Install it via <a href="https://chocolatey.org/">Chocolatey</a>: <code>choco install cake.portable</code></li>
 </ul>
-<p>Steps:</p>
-<ol>
-<li>Create a repository for your blog source in Visual Studio Online.</li>
-<li>Add a new, empty build definition</li>
-</ol>
 <h1 id="kick-starting-wyam-with-cake">Kick-starting Wyam with Cake</h1>
 <p>Create a file called <code>build.cake</code> in the root of your repo with these contents:</p>
 <pre><code class="language-C#">#tool nuget:?package=Wyam
@@ -180,9 +183,17 @@ This post is about fists and how clumpy they always are.
 <p>Great! Try running it using Cake. Because Wyam targets an older version of Cake at the time of writing, I'm adding the <code>--settings_skipverification=true</code> option so that Cake doesn't complain.</p>
 <pre><code>cake --settings_skipverification=true -target=Preview
 </code></pre>
-<p>Open a browser to <a href="http://localhost:5080">http://localhost:5080</a> and see the results.</p>
+<p>Open a browser to <a href="http://localhost:5080">http://localhost:5080</a> and see the results. Editing the file while cake is running the Preview should cause your browser to refresh whenever you save changes.</p>
 <h1 id="automating-deployment">Automating Deployment</h1>
-<p>Add a new file called <code>publish.ps1</code> to the root of your repo with these contents:</p>
+<ol>
+<li>Install the <a href="https://marketplace.visualstudio.com/items?itemName=cake-build.cake">Cake build task from the Visual Studio Marketplace</a> into VSO.</li>
+<li>In Visual Studio Online, create a new, empty build for your repo, selecting an appropriate build agent.</li>
+<li>Add the Cake Build task.</li>
+<li>Select the <code>build.cake</code> file from the root of your repo as the <em>Cake Script</em>.</li>
+<li>Set the <em>Target</em> to <code>Default</code>.</li>
+<li>Optionally add the <code>--settings_skipverification=true</code> option to <em>Cake Arguments</em>.</li>
+<li>Add a new <em>PowerShell Script</em> build task, set <em>Type</em> to <code>Inline Script</code> and add these contents:</li>
+</ol>
 <pre><code class="language-powershell">param (
   [string]$Token,
   [string]$UserName,
@@ -193,14 +204,24 @@ $localFolder = &quot;gh-pages&quot;
 $repo = &quot;https://$($UserName):$($Token)&#64;github.com/$($Repository).git&quot;
 git clone $repo --branch=master $localFolder
 
-$from = &quot;output\*&quot;
-$to = $($localFolder)
-Copy-Item $from $to -recurse
+Copy-Item &quot;output\*&quot; $localFolder -recurse
 
 Set-Location $localFolder
-git commit -am.
+git add *
+git commit -m &quot;Update.&quot;
 git push
 </code></pre>
+<ol start="8">
+<li>Create a new GitHub Personal Access token from GitHub's Developer Settings page, or by <a href="https://github.com/settings/tokens/new">clicking here</a>. I added all of the <code>repo</code> permissions to the token.</li>
+<li>In VSO, add arguments for the script, replacing <code>TOKEN</code> with your token and replacing the other values as appropriate:</li>
+</ol>
+<pre><code>-Token TOKEN -UserName &quot;ReubenBond&quot; -Repository &quot;ReubenBond/reubenbond.github.io&quot;
+</code></pre>
+<ol start="10">
+<li>Up on the <em>Triggers</em> pane, enable Continuous Integration.</li>
+<li>Click <em>Save &amp; queue</em>, then cross your fingers.</li>
+</ol>
+<p>Hopefully that's it and you can now add new blog posts to the <code>input/posts</code> directory.</p>
 
 
 

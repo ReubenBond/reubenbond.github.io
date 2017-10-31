@@ -5,8 +5,8 @@
 		<link>http://reubenbond.github.io/</link>
 		<description>Write-Behind Blog</description>
 		<copyright>2017</copyright>
-		<pubDate>Tue, 31 Oct 2017 06:17:43 GMT</pubDate>
-		<lastBuildDate>Tue, 31 Oct 2017 06:17:43 GMT</lastBuildDate>
+		<pubDate>Tue, 31 Oct 2017 06:37:26 GMT</pubDate>
+		<lastBuildDate>Tue, 31 Oct 2017 06:37:26 GMT</lastBuildDate>
 		<item>
 			<title>A Reliable Serializer for .NET</title>
 			<link>http://reubenbond.github.io/posts/2017-Oct-31-version-tolerant-serializer</link>
@@ -159,17 +159,20 @@ public enum ExtendedWireType : byte
 			<pubDate>Mon, 30 Oct 2017 00:00:00 GMT</pubDate>
 			<content:encoded>&lt;p&gt;Here goes nothing! This blog is built with &lt;a href="https://twitter.com/daveaglick"&gt;Dave Glick's&lt;/a&gt; &lt;a href="https://wyam.io/"&gt;Wyam&lt;/a&gt; static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages.&lt;/p&gt;
 &lt;p&gt;Here's how I set it up.&lt;/p&gt;
-&lt;p&gt;Requirements:&lt;/p&gt;
+&lt;h1 id="preamble-requirements"&gt;Preamble: Requirements&lt;/h1&gt;
 &lt;ul&gt;
-&lt;li&gt;A Visual Studio Online repository for your blog source. You could have VSO pull the source from GitHub or somewhere else, instead.&lt;/li&gt;
-&lt;li&gt;A GitHub pages repo. I created a repository called &lt;a href="https://github.com/ReubenBond/reubenbond.github.io"&gt;&lt;code&gt;reubenbond.github.io&lt;/code&gt;&lt;/a&gt; under my profile, &lt;a href="https://github.com/ReubenBond/"&gt;&lt;code&gt;ReubenBond&lt;/code&gt;&lt;/a&gt;. You'll be pushing compiled sources to the master branch of that repo.&lt;/li&gt;
+&lt;li&gt;A Visual Studio Online repository for your blog source.
+&lt;ul&gt;
+&lt;li&gt;You could have also VSO pull the source from GitHub or somewhere else instead, but I haven't covered that here.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;A GitHub repository which will serve the compiled output via GitHub Pages.
+&lt;ul&gt;
+&lt;li&gt;I created a repository called &lt;a href="https://github.com/ReubenBond/reubenbond.github.io"&gt;&lt;code&gt;reubenbond.github.io&lt;/code&gt;&lt;/a&gt; under my profile, &lt;a href="https://github.com/ReubenBond/"&gt;&lt;code&gt;ReubenBond&lt;/code&gt;&lt;/a&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
 &lt;li&gt;Cake so you can test it out locally. Install it via &lt;a href="https://chocolatey.org/"&gt;Chocolatey&lt;/a&gt;: &lt;code&gt;choco install cake.portable&lt;/code&gt;&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;Steps:&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;Create a repository for your blog source in Visual Studio Online.&lt;/li&gt;
-&lt;li&gt;Add a new, empty build definition&lt;/li&gt;
-&lt;/ol&gt;
 &lt;h1 id="kick-starting-wyam-with-cake"&gt;Kick-starting Wyam with Cake&lt;/h1&gt;
 &lt;p&gt;Create a file called &lt;code&gt;build.cake&lt;/code&gt; in the root of your repo with these contents:&lt;/p&gt;
 &lt;pre&gt;&lt;code class="language-C#"&gt;#tool nuget:?package=Wyam
@@ -226,9 +229,17 @@ This post is about fists and how clumpy they always are.
 &lt;p&gt;Great! Try running it using Cake. Because Wyam targets an older version of Cake at the time of writing, I'm adding the &lt;code&gt;--settings_skipverification=true&lt;/code&gt; option so that Cake doesn't complain.&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;cake --settings_skipverification=true -target=Preview
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Open a browser to &lt;a href="http://localhost:5080"&gt;http://localhost:5080&lt;/a&gt; and see the results.&lt;/p&gt;
+&lt;p&gt;Open a browser to &lt;a href="http://localhost:5080"&gt;http://localhost:5080&lt;/a&gt; and see the results. Editing the file while cake is running the Preview should cause your browser to refresh whenever you save changes.&lt;/p&gt;
 &lt;h1 id="automating-deployment"&gt;Automating Deployment&lt;/h1&gt;
-&lt;p&gt;Add a new file called &lt;code&gt;publish.ps1&lt;/code&gt; to the root of your repo with these contents:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Install the &lt;a href="https://marketplace.visualstudio.com/items?itemName=cake-build.cake"&gt;Cake build task from the Visual Studio Marketplace&lt;/a&gt; into VSO.&lt;/li&gt;
+&lt;li&gt;In Visual Studio Online, create a new, empty build for your repo, selecting an appropriate build agent.&lt;/li&gt;
+&lt;li&gt;Add the Cake Build task.&lt;/li&gt;
+&lt;li&gt;Select the &lt;code&gt;build.cake&lt;/code&gt; file from the root of your repo as the &lt;em&gt;Cake Script&lt;/em&gt;.&lt;/li&gt;
+&lt;li&gt;Set the &lt;em&gt;Target&lt;/em&gt; to &lt;code&gt;Default&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;Optionally add the &lt;code&gt;--settings_skipverification=true&lt;/code&gt; option to &lt;em&gt;Cake Arguments&lt;/em&gt;.&lt;/li&gt;
+&lt;li&gt;Add a new &lt;em&gt;PowerShell Script&lt;/em&gt; build task, set &lt;em&gt;Type&lt;/em&gt; to &lt;code&gt;Inline Script&lt;/code&gt; and add these contents:&lt;/li&gt;
+&lt;/ol&gt;
 &lt;pre&gt;&lt;code class="language-powershell"&gt;param (
   [string]$Token,
   [string]$UserName,
@@ -239,14 +250,24 @@ $localFolder = &amp;quot;gh-pages&amp;quot;
 $repo = &amp;quot;https://$($UserName):$($Token)&amp;#64;github.com/$($Repository).git&amp;quot;
 git clone $repo --branch=master $localFolder
 
-$from = &amp;quot;output\*&amp;quot;
-$to = $($localFolder)
-Copy-Item $from $to -recurse
+Copy-Item &amp;quot;output\*&amp;quot; $localFolder -recurse
 
 Set-Location $localFolder
-git commit -am.
+git add *
+git commit -m &amp;quot;Update.&amp;quot;
 git push
 &lt;/code&gt;&lt;/pre&gt;
+&lt;ol start="8"&gt;
+&lt;li&gt;Create a new GitHub Personal Access token from GitHub's Developer Settings page, or by &lt;a href="https://github.com/settings/tokens/new"&gt;clicking here&lt;/a&gt;. I added all of the &lt;code&gt;repo&lt;/code&gt; permissions to the token.&lt;/li&gt;
+&lt;li&gt;In VSO, add arguments for the script, replacing &lt;code&gt;TOKEN&lt;/code&gt; with your token and replacing the other values as appropriate:&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;-Token TOKEN -UserName &amp;quot;ReubenBond&amp;quot; -Repository &amp;quot;ReubenBond/reubenbond.github.io&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ol start="10"&gt;
+&lt;li&gt;Up on the &lt;em&gt;Triggers&lt;/em&gt; pane, enable Continuous Integration.&lt;/li&gt;
+&lt;li&gt;Click &lt;em&gt;Save &amp;amp; queue&lt;/em&gt;, then cross your fingers.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Hopefully that's it and you can now add new blog posts to the &lt;code&gt;input/posts&lt;/code&gt; directory.&lt;/p&gt;
 </content:encoded>
 		</item>
 	</channel>
