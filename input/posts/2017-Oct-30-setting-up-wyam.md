@@ -1,4 +1,4 @@
-Title: Wyam Through Visual Studio Online
+Title: Deploying Wyam Via Visual Studio Online
 Published: 10/30/2017
 Tags: ['Wyam', 'Visual Studio Online', 'Blog']
 ---
@@ -82,7 +82,7 @@ cake --settings_skipverification=true -target=Preview
 ```
 Open a browser to http://localhost:5080 and see the results.
 
-# Deploying to GitHub Pages through Visual Studio Online
+# Automating Deployment
 
 Add a new file called `publish.ps1` to the root of your repo with these contents:
 ```powershell
