@@ -60,3 +60,7 @@ hr {
   border-radius: 3px;
   background: none;
 }
+
+footer {
+  padding: 64px 0 26px;
+}

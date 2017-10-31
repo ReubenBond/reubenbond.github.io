@@ -5,6 +5,6 @@
 Settings[Keys.Host] = "reubenbond.github.io";
 Settings[BlogKeys.Title] = "Reuben Bond";
 Settings[BlogKeys.Description] = "reublog";
-Settings[BlogKeys.Image] = "images/header.jpg";
+Settings[BlogKeys.Image] = "/images/header.jpg";
 
 // Add any pipeline customizations here
