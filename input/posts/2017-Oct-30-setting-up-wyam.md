@@ -1,4 +1,4 @@
-Title: Deploying Wyam Via Visual Studio Online
+Title: Deploying Wyam GitHub Using Visual Studio Online
 Published: 10/30/2017
 Tags: ['Wyam', 'Visual Studio Online', 'Blog']
 ---
