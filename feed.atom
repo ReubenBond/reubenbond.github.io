@@ -4,7 +4,7 @@
 	<id>http://reubenbond.github.io/</id>
 	<title>Reuben Bond</title>
 	<rights>2017</rights>
-	<updated>2017-10-31T10:51:34Z</updated>
+	<updated>2017-10-31T10:54:30Z</updated>
 	<logo>http://reubenbond.github.io/images/header.jpg</logo>
 	<subtitle>reublog</subtitle>
 	<entry>
@@ -219,7 +219,7 @@ Settings[BlogKeys.Description] = &amp;quot;Blog of the Gods&amp;quot;;
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;Create a folder called &lt;code&gt;input&lt;/code&gt; and add a folder called &lt;code&gt;posts&lt;/code&gt; inside that.
 Now create &lt;code&gt;input/posts/fist-post.md&lt;/code&gt;:&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-md"&gt;Title: Fist Post! A song of fice and ire
+&lt;pre&gt;&lt;code&gt;Title: Fist Post! A song of fice and ire
 Published: 10/30/2017
 Tags: ['Fists']
 ---

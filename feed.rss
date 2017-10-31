@@ -5,8 +5,8 @@
 		<link>http://reubenbond.github.io/</link>
 		<description>reublog</description>
 		<copyright>2017</copyright>
-		<pubDate>Tue, 31 Oct 2017 10:51:34 GMT</pubDate>
-		<lastBuildDate>Tue, 31 Oct 2017 10:51:34 GMT</lastBuildDate>
+		<pubDate>Tue, 31 Oct 2017 10:54:30 GMT</pubDate>
+		<lastBuildDate>Tue, 31 Oct 2017 10:54:30 GMT</lastBuildDate>
 		<item>
 			<title>A Reliable Serializer for .NET</title>
 			<link>http://reubenbond.github.io/posts/2017-Oct-31-version-tolerant-serializer</link>
@@ -220,7 +220,7 @@ Settings[BlogKeys.Description] = &amp;quot;Blog of the Gods&amp;quot;;
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;Create a folder called &lt;code&gt;input&lt;/code&gt; and add a folder called &lt;code&gt;posts&lt;/code&gt; inside that.
 Now create &lt;code&gt;input/posts/fist-post.md&lt;/code&gt;:&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-md"&gt;Title: Fist Post! A song of fice and ire
+&lt;pre&gt;&lt;code&gt;Title: Fist Post! A song of fice and ire
 Published: 10/30/2017
 Tags: ['Fists']
 ---
