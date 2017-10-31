@@ -3,10 +3,10 @@
 	<channel>
 		<title>Reuben Bond</title>
 		<link>http://reubenbond.github.io/</link>
-		<description>Write-Behind Blog</description>
+		<description>Reublog</description>
 		<copyright>2017</copyright>
-		<pubDate>Tue, 31 Oct 2017 06:51:33 GMT</pubDate>
-		<lastBuildDate>Tue, 31 Oct 2017 06:51:33 GMT</lastBuildDate>
+		<pubDate>Tue, 31 Oct 2017 09:07:23 GMT</pubDate>
+		<lastBuildDate>Tue, 31 Oct 2017 09:07:23 GMT</lastBuildDate>
 		<item>
 			<title>A Reliable Serializer for .NET</title>
 			<link>http://reubenbond.github.io/posts/2017-Oct-31-version-tolerant-serializer</link>
