@@ -11,6 +11,53 @@ body {
   background-position: left top !important;
   color: #cfcfcf;
 }
+
+.navbar-default {
+  background-color:#080808 !important;
+}
+
+.navbar-default .navbar-brand {
+  color: #FFF;
+}
+
+.navbar-default.navbar-toggle:hover {
+  color: #EEE;
+}
+
+.navbar-default .navbar-toggle .icon-bar {
+  background-color: #EEE;
+}
+
+.navbar-default .navbar-toggle {
+  border-color: #fff;
+}
+
+.navbar-default .navbar-nav>li>a:focus, .navbar-default .navbar-nav>li>a {
+  color: #EEE;
+}
+
+.navbar-default .navbar-nav>li>a:focus, .navbar-default .navbar-nav>li>a:hover {
+  color: #fff;
+}
+
+.navbar-default .navbar-toggle:focus, .navbar-default .navbar-toggle:hover {
+  background-color: #444;
+}
+
+@media only screen and (min-width: 1170px) {
+  .navbar-custom.is-fixed {
+    background-color:#080808 !important;
+  }
+  
+  .navbar-custom.is-fixed .navbar-brand {
+    color: #FFF;
+  }
+
+  .navbar-custom.is-fixed .nav li a {
+    color: #FFF;
+  }
+}
+
 a {
   color: #4183C4;
 }
