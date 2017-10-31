@@ -1,108 +1,115 @@
 /*
+ * Visual Studio 2015 dark style
+ * Author: Nicolas LLOBERA <nllobera@gmail.com>
+ */
 
-Gruvbox style (dark) (c) Pavel Pertsev (original style at https://github.com/morhetz/gruvbox)
-
-*/
-
-.hljs {
+ .hljs {
   display: block;
   overflow-x: auto;
   padding: 0.5em;
-  background: #282828;
+  background: #1E1E1E;
+  color: #DCDCDC;
 }
 
-.hljs,
-.hljs-subst {
-  color: #ebdbb2;
-}
-
-/* Gruvbox Red */
-.hljs-deletion,
-.hljs-formula,
 .hljs-keyword,
-.hljs-link,
-.hljs-selector-tag {
-  color: #fb4934;
+.hljs-literal,
+.hljs-symbol,
+.hljs-name {
+  color: #569CD6;
+}
+.hljs-link {
+  color: #569CD6;
+  text-decoration: underline;
 }
 
-/* Gruvbox Blue */
 .hljs-built_in,
-.hljs-emphasis,
-.hljs-name,
-.hljs-quote,
-.hljs-strong,
-.hljs-title,
-.hljs-variable {
-  color: #83a598;
-}
-
-/* Gruvbox Yellow */
-.hljs-attr,
-.hljs-params,
-.hljs-template-tag,
 .hljs-type {
-  color: #fabd2f;
+  color: #4EC9B0;
 }
 
-/* Gruvbox Purple */
-.hljs-builtin-name,
-.hljs-doctag,
-.hljs-literal,
-.hljs-number {
-  color: #8f3f71;
+.hljs-number,
+.hljs-class {
+  color: #B8D7A3;
 }
 
-/* Gruvbox Orange */
-.hljs-code,
-.hljs-meta,
-.hljs-regexp,
-.hljs-selector-id,
-.hljs-template-variable {
-  color: #fe8019;
-}
-
-/* Gruvbox Green */
-.hljs-addition,
-.hljs-meta-string,
-.hljs-section,
-.hljs-selector-attr,
-.hljs-selector-class,
 .hljs-string,
-.hljs-symbol {
-  color: #b8bb26;
+.hljs-meta-string {
+  color: #D69D85;
 }
 
-/* Gruvbox Aqua */
-.hljs-attribute,
-.hljs-bullet,
-.hljs-class,
+.hljs-regexp,
+.hljs-template-tag {
+  color: #9A5334;
+}
+
+.hljs-subst,
 .hljs-function,
-.hljs-function .hljs-keyword,
-.hljs-meta-keyword,
-.hljs-selector-pseudo,
-.hljs-tag {
-  color: #8ec07c;
-}
-
-/* Gruvbox Gray */
-.hljs-comment {
-  color: #928374;
-}
-
-/* Gruvbox Purple */
-.hljs-link_label,
-.hljs-literal,
-.hljs-number {
-  color: #d3869b;
+.hljs-title,
+.hljs-params,
+.hljs-formula {
+  color: #DCDCDC;
 }
 
 .hljs-comment,
+.hljs-quote {
+  color: #57A64A;
+  font-style: italic;
+}
+
+.hljs-doctag {
+  color: #608B4E;
+}
+
+.hljs-meta,
+.hljs-meta-keyword,
+.hljs-tag {
+  color: #9B9B9B;
+}
+
+.hljs-variable,
+.hljs-template-variable {
+  color: #BD63C5;
+}
+
+.hljs-attr,
+.hljs-attribute,
+.hljs-builtin-name {
+  color: #9CDCFE;
+}
+
+.hljs-section {
+  color: gold;
+}
+
 .hljs-emphasis {
   font-style: italic;
 }
 
-.hljs-section,
-.hljs-strong,
-.hljs-tag {
+.hljs-strong {
   font-weight: bold;
+}
+
+/*.hljs-code {
+  font-family:'Monospace';
+}*/
+
+.hljs-bullet,
+.hljs-selector-tag,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-selector-attr,
+.hljs-selector-pseudo {
+  color: #D7BA7D;
+}
+
+.hljs-addition {
+  background-color: #144212;
+  display: inline-block;
+  width: 100%;
+}
+
+.hljs-deletion {
+  background-color: #600;
+  display: inline-block;
+  width: 100%;
 }
