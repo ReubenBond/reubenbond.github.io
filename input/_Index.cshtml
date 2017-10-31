@@ -3,7 +3,7 @@
 }
 
 <div class="row">
-    <div class="col-sm-8 right-border">
+    <div class="col-sm-12">
         @{
             bool first = true;
             foreach(IDocument post in Model.DocumentList(Keys.PageDocuments))
@@ -49,30 +49,4 @@
             </li>
         </ul>
     </div>
-    <div class="col-sm-4 sidebar">
-        <hr class="visible-xs-block" />
-
-        @if(!Context.Bool(BlogKeys.IndexPaging))
-        {
-            <h5>Older Posts</h5>
-            <ul class="list-unstyled">
-                @foreach(IDocument post in Documents[Blog.BlogPosts].Skip(Model.DocumentList(Keys.PageDocuments).Count).Take(4))
-                {        
-                    // TODO: The skip above needs to line up with the number of posts on the index page
-                    // Also turn this section off if the index is paged
-                    <li><a href="@Context.GetLink(post)">@post.WithoutSettings.String(BlogKeys.Title)</a></li>
-                }
-            </ul>
-            @if(Context.Bool(BlogKeys.GenerateArchive))
-            {
-                <ul class="pager">
-                    <li class="next">
-                        <a href="@Context.GetLink(Context.String(BlogKeys.PostsPath))">Archive &rarr;</a>
-                    </li>
-                </ul>
-            }
-        }
-
-        @Html.Partial("_Sidebar")
-    </div> 
 </div>
