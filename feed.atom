@@ -4,10 +4,12 @@
 	<id>http://reubenbond.github.io/</id>
 	<title>Reuben Bond</title>
 	<rights>2017</rights>
-	<updated>2017-10-31T09:07:23Z</updated>
-	<subtitle>Reublog</subtitle>
+	<updated>2017-10-31T09:45:28Z</updated>
+	<logo>http://reubenbond.github.io/images/header.jpg</logo>
+	<subtitle>reublog</subtitle>
 	<entry>
 		<link href="http://reubenbond.github.io/posts/2017-Oct-31-version-tolerant-serializer" />
+		<link rel="enclosure" type="image" href="http://reubenbond.github.io/images/header.jpg" />
 		<id>http://reubenbond.github.io/posts/2017-Oct-31-version-tolerant-serializer</id>
 		<title>A Reliable Serializer for .NET</title>
 		<updated>2017-10-31T00:00:00Z</updated>
@@ -152,6 +154,7 @@ public enum ExtendedWireType : byte
 	</entry>
 	<entry>
 		<link href="http://reubenbond.github.io/posts/2017-Oct-30-setting-up-wyam" />
+		<link rel="enclosure" type="image" href="http://reubenbond.github.io/images/header.jpg" />
 		<id>http://reubenbond.github.io/posts/2017-Oct-30-setting-up-wyam</id>
 		<title>Deploying Wyam Via Visual Studio Online</title>
 		<updated>2017-10-30T00:00:00Z</updated>
