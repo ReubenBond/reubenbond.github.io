@@ -4,15 +4,9 @@ param (
   [string]$Repository
 )
 
-$localFolder = "gh-pages"
-$repo = "https://$($UserName):$($Token)@github.com/$($Repository).git"
-git clone $repo --branch=master $localFolder
+Set-Location "gh-pages"
+git clone "https://$($UserName):$($Token)@github.com/$($Repository).git" --branch=master ./
 
-$from = "output\*"
-$to = $($localFolder)
-Copy-Item $from $to -recurse
-
-Set-Location $localFolder
-git add *
-git commit -m "Update."
+Copy-Item ../output/* ./ -recurse
+git commit -am.
 git push

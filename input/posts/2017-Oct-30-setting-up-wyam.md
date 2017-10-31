@@ -83,4 +83,24 @@ cake --settings_skipverification=true -target=Preview
 Open a browser to http://localhost:5080 and see the results.
 
 # Deploying to GitHub Pages through Visual Studio Online
-Now on to the fun part.
+
+Add a new file called `publish.ps1` to the root of your repo with these contents:
+```powershell
+param (
+  [string]$Token,
+  [string]$UserName,
+  [string]$Repository
+)
+
+$localFolder = "gh-pages"
+$repo = "https://$($UserName):$($Token)@github.com/$($Repository).git"
+git clone $repo --branch=master $localFolder
+
+$from = "output\*"
+$to = $($localFolder)
+Copy-Item $from $to -recurse
+
+Set-Location $localFolder
+git commit -am.
+git push
+```
