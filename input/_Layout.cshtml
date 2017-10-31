@@ -40,7 +40,12 @@
         @* <meta property="og:image" content="@Blog.Image" /> *@
         <meta property="og:type" content="website" />
         <meta property="og:url" content="@Context.GetLink(Model, true)" />
-        <!-- TODO: More social graph meta tags -->
+
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:site" content="@@ReubenBond" />
+        <meta name="twitter:title" content="@Context.String(BlogKeys.Title)" />
+        <meta name="twitter:description" content="@Context.String(BlogKeys.Excerpt)" />
+        <meta name="twitter:image" content="@Model.String(BlogKeys.Image)" />
 
         <script src="@Context.GetLink("/assets/js/jquery.min.js")"></script>
         <script src="@Context.GetLink("/assets/js/bootstrap.min.js")"></script>     
