@@ -56,7 +56,7 @@
                         <meta name="twitter:description" content="@Model.String(BlogKeys.Description)" />
                 }
         }
-        <meta name="twitter:image" content="@Model.String(BlogKeys.Image)" />
+        <meta name="twitter:image" content="@Context.GetLink(Model.String(BlogKeys.Image), true)" />
 
         <script src="@Context.GetLink("/assets/js/jquery.min.js")"></script>
         <script src="@Context.GetLink("/assets/js/bootstrap.min.js")"></script>     
