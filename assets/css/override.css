@@ -7,22 +7,27 @@ body {
   background-origin: padding-box !important;
   background-attachment: scroll !important;
   background-repeat: repeat !important;
-  background-size: auto !important;
+  background-size: 200px !important;
   background-position: left top !important;
   color: #cfcfcf;
 }
 a {
   color: #4183C4;
 }
+
 code {
   font-family: "Menlo", Consolas, "Liberation Mono", Menlo, Courier, monospace !important;
-  font-size: 22px !important;
+  font-size: 18px !important;
   background: #222!important;
   color: #ccc!important;
   border: 1px solid rgba(255, 255, 255, .1) !important;
   border-radius: 5px;
   line-height: 1.5;
   overflow: visible !important;
+}
+
+a code {
+  color: #79acd1 !important;
 }
 
 pre code {
