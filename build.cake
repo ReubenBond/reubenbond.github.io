@@ -17,7 +17,7 @@ Task("Build")
         Wyam(new WyamSettings
         {
             Recipe = "Blog",
-            Theme = "Stellar",
+            Theme = "CleanBlog",
             UpdatePackages = true
         });
     });
@@ -28,7 +28,7 @@ Task("Preview")
         Wyam(new WyamSettings
         {
             Recipe = "Blog",
-            Theme = "Stellar",
+            Theme = "CleanBlog",
             UpdatePackages = true,
             Preview = true,
             Watch = true

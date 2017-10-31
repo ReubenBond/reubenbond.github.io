@@ -1,9 +1,9 @@
 #recipe Blog
-#theme Stellar
+#theme CleanBlog
 
 // Customize your settings and add new ones here
 Settings[Keys.Host] = "reubenbond.github.io";
 Settings[BlogKeys.Title] = "Reuben Bond";
-Settings[BlogKeys.Description] = "Welcome!";
+Settings[BlogKeys.Description] = "Write-Behind Blog";
 
 // Add any pipeline customizations here

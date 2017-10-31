@@ -12,7 +12,7 @@ $from = "output\*"
 $to = $($localFolder)
 Copy-Item $from $to -recurse
 
-Push-Location $localFolder
+Set-Location $localFolder
 git add *
 git commit -m "Update."
-git push --repo=$repo -f
+git push
