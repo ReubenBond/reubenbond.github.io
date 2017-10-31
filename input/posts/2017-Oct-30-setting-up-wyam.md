@@ -63,7 +63,7 @@ Settings[BlogKeys.Description] = "Blog of the Gods";
 
 Create a folder called `input` and add a folder called `posts` inside that.
 Now create `input/posts/fist-post.md`:
-```md
+```
 Title: Fist Post! A song of fice and ire
 Published: 10/30/2017
 Tags: ['Fists']
