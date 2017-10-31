@@ -7,14 +7,12 @@ Here goes nothing! This blog is built with [Dave Glick's](https://twitter.com/da
 
 Here's how I set it up.
 
-Requirements:
- * A Visual Studio Online repository for your blog source. You could have VSO pull the source from GitHub or somewhere else, instead.
- * A GitHub pages repo. I created a repository called [`reubenbond.github.io`](https://github.com/ReubenBond/reubenbond.github.io) under my profile, [`ReubenBond`](https://github.com/ReubenBond/). You'll be pushing compiled sources to the master branch of that repo.
+# Preamble: Requirements
+ * A Visual Studio Online repository for your blog source.
+   * You could have also VSO pull the source from GitHub or somewhere else instead, but I haven't covered that here.
+ * A GitHub repository which will serve the compiled output via GitHub Pages.
+   * I created a repository called [`reubenbond.github.io`](https://github.com/ReubenBond/reubenbond.github.io) under my profile, [`ReubenBond`](https://github.com/ReubenBond/).
  * Cake so you can test it out locally. Install it via [Chocolatey](https://chocolatey.org/): `choco install cake.portable`
-
- Steps:
- 1. Create a repository for your blog source in Visual Studio Online.
- 2. Add a new, empty build definition 
 
 # Kick-starting Wyam with Cake
 
@@ -80,11 +78,17 @@ Great! Try running it using Cake. Because Wyam targets an older version of Cake 
 ```
 cake --settings_skipverification=true -target=Preview
 ```
-Open a browser to http://localhost:5080 and see the results.
+Open a browser to http://localhost:5080 and see the results. Editing the file while cake is running the Preview should cause your browser to refresh whenever you save changes.
 
 # Automating Deployment
 
-Add a new file called `publish.ps1` to the root of your repo with these contents:
+1. Install the [Cake build task from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=cake-build.cake) into VSO.
+2. In Visual Studio Online, create a new, empty build for your repo, selecting an appropriate build agent.
+3. Add the Cake Build task.
+4. Select the `build.cake` file from the root of your repo as the *Cake Script*.
+5. Set the *Target* to `Default`.
+6. Optionally add the `--settings_skipverification=true` option to *Cake Arguments*.
+7. Add a new *PowerShell Script* build task, set *Type* to `Inline Script` and add these contents:
 ```powershell
 param (
   [string]$Token,
@@ -96,11 +100,19 @@ $localFolder = "gh-pages"
 $repo = "https://$($UserName):$($Token)@github.com/$($Repository).git"
 git clone $repo --branch=master $localFolder
 
-$from = "output\*"
-$to = $($localFolder)
-Copy-Item $from $to -recurse
+Copy-Item "output\*" $localFolder -recurse
 
 Set-Location $localFolder
-git commit -am.
+git add *
+git commit -m "Update."
 git push
 ```
+8. Create a new GitHub Personal Access token from GitHub's Developer Settings page, or by [clicking here](https://github.com/settings/tokens/new). I added all of the `repo` permissions to the token.
+9. In VSO, add arguments for the script, replacing `TOKEN` with your token and replacing the other values as appropriate:
+```
+-Token TOKEN -UserName "ReubenBond" -Repository "ReubenBond/reubenbond.github.io"
+```
+10. Up on the *Triggers* pane, enable Continuous Integration.
+11. Click *Save & queue*, then cross your fingers.
+
+Hopefully that's it and you can now add new blog posts to the `input/posts` directory.
