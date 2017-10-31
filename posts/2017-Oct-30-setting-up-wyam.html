@@ -5,7 +5,7 @@
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
 
-        <title>Reuben Bond - About Me</title>
+        <title>Reuben Bond - Wyam Through Visual Studio Online</title>
         <meta name="description" content="Write-Behind Blog" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0">        
 
@@ -28,9 +28,9 @@
         <meta name="msapplication-tooltip" content="Reuben Bond" />
         <meta name="msapplication-starturl" content="/" />
 
-        <meta property="og:title" content="Reuben Bond - About Me" />
+        <meta property="og:title" content="Reuben Bond - Wyam Through Visual Studio Online" />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="http://reubenbond.github.io/about" />
+        <meta property="og:url" content="http://reubenbond.github.io/posts/2017-Oct-30-setting-up-wyam" />
         <!-- TODO: More social graph meta tags -->
 
         <script src="/assets/js/jquery.min.js"></script>
@@ -88,9 +88,19 @@
                         <div class="container">
                                 <div class="row">
                                         <div class="col-md-12">
-<div class="site-heading">
-    <h1>About Me</h1>
-</div>                                            </div>
+
+    
+<div class="post-heading">
+    <h1>Wyam Through Visual Studio Online</h1>
+    <div class="meta">        
+Published on Monday, October 30, 2017<br>    </div>
+        <div class="tags">
+                    <a role="button" href="/tags/Blog" class="btn btn-default btn-xs">Blog</a>
+                    <a role="button" href="/tags/Visual-Studio-Online" class="btn btn-default btn-xs">Visual Studio Online</a>
+                    <a role="button" href="/tags/Wyam" class="btn btn-default btn-xs">Wyam</a>
+        </div>     
+</div>
+                                        </div>
                                 </div>
                         </div>
                 </header>
@@ -99,7 +109,82 @@
                 <div class="container">
                         <div class="row">
                                 <div id="content" class="col-md-12">
-                                        <p>I'm awesome!</p>
+                                        
+
+<p>Here goes nothing! This blog is built with <a href="https://twitter.com/daveaglick">Dave Glick's</a> <a href="https://wyam.io/">Wyam</a> static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages.</p>
+<p>Here's how I set it up.</p>
+<p>Requirements:</p>
+<ul>
+<li>A Visual Studio Online repository for your blog source. You could have VSO pull the source from GitHub or somewhere else, instead.</li>
+<li>A GitHub pages repo. I created a repository called <a href="https://github.com/ReubenBond/reubenbond.github.io"><code>reubenbond.github.io</code></a> under my profile, <a href="https://github.com/ReubenBond/"><code>ReubenBond</code></a>. You'll be pushing compiled sources to the master branch of that repo.</li>
+<li>Cake so you can test it out locally. Install it via <a href="https://chocolatey.org/">Chocolatey</a>: <code>choco install cake.portable</code></li>
+</ul>
+<p>Steps:</p>
+<ol>
+<li>Create a repository for your blog source in Visual Studio Online.</li>
+<li>Add a new, empty build definition</li>
+</ol>
+<h1 id="kick-starting-wyam-with-cake">Kick-starting Wyam with Cake</h1>
+<p>Create a file called <code>build.cake</code> in the root of your repo with these contents:</p>
+<pre><code class="language-C#">#tool nuget:?package=Wyam
+#addin nuget:?package=Cake.Wyam
+
+var target = Argument(&quot;target&quot;, &quot;Default&quot;);
+
+Task(&quot;Build&quot;)
+   .Does(() =&gt;
+   {
+       Wyam(new WyamSettings
+       {
+           Recipe = &quot;Blog&quot;,
+           Theme = &quot;CleanBlog&quot;,
+           UpdatePackages = true
+       });
+   });
+   
+Task(&quot;Preview&quot;)
+   .Does(() =&gt;
+   {
+       Wyam(new WyamSettings
+       {
+           Recipe = &quot;Blog&quot;,
+           Theme = &quot;CleanBlog&quot;,
+           UpdatePackages = true,
+           Preview = true,
+           Watch = true
+       });        
+   });
+
+Task(&quot;Default&quot;)
+   .IsDependentOn(&quot;Build&quot;);    
+   
+RunTarget(target);
+</code></pre>
+<p>Add a file called <code>config.wyam</code> like so:</p>
+<pre><code class="language-C#">#recipe Blog
+#theme CleanBlog
+
+Settings[Keys.Host] = &quot;yourname.github.io&quot;;
+Settings[BlogKeys.Title] = &quot;MegaBlog&quot;;
+Settings[BlogKeys.Description] = &quot;Blog of the Gods&quot;;
+</code></pre>
+<p>Create a folder called <code>input</code> and add a folder called <code>posts</code> inside that.
+Now create <code>input/posts/fist-post.md</code>:</p>
+<pre><code class="language-md">Title: Fist Post! A song of fice and ire
+Published: 10/30/2017
+Tags: ['Fists']
+---
+
+This post is about fists and how clumpy they always are.
+</code></pre>
+<p>Great! Try running it using Cake. Because Wyam targets an older version of Cake at the time of writing, I'm adding the <code>--settings_skipverification=true</code> option so that Cake doesn't complain.</p>
+<pre><code>cake --settings_skipverification=true -target=Preview
+</code></pre>
+<p>Open a browser to <a href="http://localhost:5080">http://localhost:5080</a> and see the results.</p>
+<h1 id="deploying-to-github-pages-through-visual-studio-online">Deploying to GitHub Pages through Visual Studio Online</h1>
+<p>Now on to the fun part.</p>
+
+
 
                                 </div>
                         </div>
