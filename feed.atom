@@ -4,7 +4,7 @@
 	<id>http://reubenbond.github.io/</id>
 	<title>Reuben Bond</title>
 	<rights>2017</rights>
-	<updated>2017-10-31T06:44:39Z</updated>
+	<updated>2017-10-31T06:51:33Z</updated>
 	<subtitle>Write-Behind Blog</subtitle>
 	<entry>
 		<link href="http://reubenbond.github.io/posts/2017-Oct-31-version-tolerant-serializer" />
@@ -155,9 +155,8 @@ public enum ExtendedWireType : byte
 		<id>http://reubenbond.github.io/posts/2017-Oct-30-setting-up-wyam</id>
 		<title>Deploying Wyam Via Visual Studio Online</title>
 		<updated>2017-10-30T00:00:00Z</updated>
-		<content>&lt;p&gt;Here goes nothing! This blog is built with &lt;a href="https://twitter.com/daveaglick"&gt;Dave Glick's&lt;/a&gt; &lt;a href="https://wyam.io/"&gt;Wyam&lt;/a&gt; static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages.&lt;/p&gt;
-&lt;p&gt;Here's how I set it up.&lt;/p&gt;
-&lt;h1 id="preamble-requirements"&gt;Preamble: Requirements&lt;/h1&gt;
+		<content>&lt;p&gt;Here goes nothing! This blog is built with &lt;a href="https://twitter.com/daveaglick"&gt;Dave Glick's&lt;/a&gt; &lt;a href="https://wyam.io/"&gt;Wyam&lt;/a&gt; static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages. Here's how to set up something similar.&lt;/p&gt;
+&lt;h1 id="prerequisites"&gt;Prerequisites&lt;/h1&gt;
 &lt;ul&gt;
 &lt;li&gt;A Visual Studio Online repository for your blog source.
 &lt;ul&gt;
@@ -227,7 +226,7 @@ This post is about fists and how clumpy they always are.
 &lt;p&gt;Great! Try running it using Cake. Because Wyam targets an older version of Cake at the time of writing, I'm adding the &lt;code&gt;--settings_skipverification=true&lt;/code&gt; option so that Cake doesn't complain.&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;cake --settings_skipverification=true -target=Preview
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Open a browser to &lt;a href="http://localhost:5080"&gt;http://localhost:5080&lt;/a&gt; and see the results. Editing the file while cake is running the Preview should cause your browser to refresh whenever you save changes.&lt;/p&gt;
+&lt;p&gt;Open a browser to &lt;a href="http://localhost:5080"&gt;http://localhost:5080&lt;/a&gt; and see the results. The &lt;code&gt;Preview&lt;/code&gt; target watches for file changes so it can automatically recompile &amp;amp; refresh your browser whenever you save changes.&lt;/p&gt;
 &lt;h1 id="automating-deployment"&gt;Automating Deployment&lt;/h1&gt;
 &lt;ol&gt;
 &lt;li&gt;Install the &lt;a href="https://marketplace.visualstudio.com/items?itemName=cake-build.cake"&gt;Cake build task from the Visual Studio Marketplace&lt;/a&gt; into VSO.&lt;/li&gt;
@@ -267,6 +266,6 @@ git push
 &lt;/ol&gt;
 &lt;p&gt;Hopefully that's it and you can now add new blog posts to the &lt;code&gt;input/posts&lt;/code&gt; directory.&lt;/p&gt;
 </content>
-		<summary>&lt;p&gt;Here goes nothing! This blog is built with &lt;a href="https://twitter.com/daveaglick"&gt;Dave Glick's&lt;/a&gt; &lt;a href="https://wyam.io/"&gt;Wyam&lt;/a&gt; static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages.&lt;/p&gt;</summary>
+		<summary>&lt;p&gt;Here goes nothing! This blog is built with &lt;a href="https://twitter.com/daveaglick"&gt;Dave Glick's&lt;/a&gt; &lt;a href="https://wyam.io/"&gt;Wyam&lt;/a&gt; static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages. Here's how to set up something similar.&lt;/p&gt;</summary>
 	</entry>
 </feed>

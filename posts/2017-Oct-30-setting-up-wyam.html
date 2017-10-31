@@ -74,7 +74,6 @@
                                         <ul class="nav navbar-nav navbar-right">
                                                         <li><a href="/posts">Archive</a></li>
         <li><a href="/tags">Tags</a></li>
-        <li><a href="/about">About Me</a></li>
  
                                         </ul>
                                 </div>
@@ -111,9 +110,8 @@ Published on Monday, October 30, 2017<br>    </div>
                                 <div id="content" class="col-md-12">
                                         
 
-<p>Here goes nothing! This blog is built with <a href="https://twitter.com/daveaglick">Dave Glick's</a> <a href="https://wyam.io/">Wyam</a> static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages.</p>
-<p>Here's how I set it up.</p>
-<h1 id="preamble-requirements">Preamble: Requirements</h1>
+<p>Here goes nothing! This blog is built with <a href="https://twitter.com/daveaglick">Dave Glick's</a> <a href="https://wyam.io/">Wyam</a> static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages. Here's how to set up something similar.</p>
+<h1 id="prerequisites">Prerequisites</h1>
 <ul>
 <li>A Visual Studio Online repository for your blog source.
 <ul>
@@ -183,7 +181,7 @@ This post is about fists and how clumpy they always are.
 <p>Great! Try running it using Cake. Because Wyam targets an older version of Cake at the time of writing, I'm adding the <code>--settings_skipverification=true</code> option so that Cake doesn't complain.</p>
 <pre><code>cake --settings_skipverification=true -target=Preview
 </code></pre>
-<p>Open a browser to <a href="http://localhost:5080">http://localhost:5080</a> and see the results. Editing the file while cake is running the Preview should cause your browser to refresh whenever you save changes.</p>
+<p>Open a browser to <a href="http://localhost:5080">http://localhost:5080</a> and see the results. The <code>Preview</code> target watches for file changes so it can automatically recompile &amp; refresh your browser whenever you save changes.</p>
 <h1 id="automating-deployment">Automating Deployment</h1>
 <ol>
 <li>Install the <a href="https://marketplace.visualstudio.com/items?itemName=cake-build.cake">Cake build task from the Visual Studio Marketplace</a> into VSO.</li>
