@@ -5,13 +5,13 @@
 		<link>http://reubenbond.github.io/</link>
 		<description>reublog</description>
 		<copyright>2017</copyright>
-		<pubDate>Wed, 01 Nov 2017 08:29:08 GMT</pubDate>
-		<lastBuildDate>Wed, 01 Nov 2017 08:29:08 GMT</lastBuildDate>
+		<pubDate>Wed, 01 Nov 2017 08:43:30 GMT</pubDate>
+		<lastBuildDate>Wed, 01 Nov 2017 08:43:30 GMT</lastBuildDate>
 		<item>
 			<title>Code Generation on .NET</title>
 			<link>http://reubenbond.github.io/posts/codegen-1</link>
 			<description>&lt;p&gt;&lt;em&gt;This is the first part in what's hopefully a series of short posts covering code generation on the .NET platform.&lt;/em&gt;&lt;/p&gt;</description>
-			<enclosure url="http://reubenbond.github.io/images/header.jpg" length="0" type="image" />
+			<enclosure url="http://reubenbond.github.io/images/codegen-1-banner.png" length="0" type="image" />
 			<guid>http://reubenbond.github.io/posts/codegen-1</guid>
 			<pubDate>Wed, 01 Nov 2017 00:00:00 GMT</pubDate>
 			<content:encoded>&lt;p&gt;&lt;em&gt;This is the first part in what's hopefully a series of short posts covering code generation on the .NET platform.&lt;/em&gt;&lt;/p&gt;

@@ -4,12 +4,12 @@
 	<id>http://reubenbond.github.io/</id>
 	<title>reublog</title>
 	<rights>2017</rights>
-	<updated>2017-11-01T08:29:08Z</updated>
+	<updated>2017-11-01T08:43:30Z</updated>
 	<logo>http://reubenbond.github.io/images/header.jpg</logo>
 	<subtitle>reublog</subtitle>
 	<entry>
 		<link href="http://reubenbond.github.io/posts/codegen-1" />
-		<link rel="enclosure" type="image" href="http://reubenbond.github.io/images/header.jpg" />
+		<link rel="enclosure" type="image" href="http://reubenbond.github.io/images/codegen-1-banner.png" />
 		<id>http://reubenbond.github.io/posts/codegen-1</id>
 		<title>Code Generation on .NET</title>
 		<updated>2017-11-01T00:00:00Z</updated>
