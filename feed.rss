@@ -5,8 +5,71 @@
 		<link>http://reubenbond.github.io/</link>
 		<description>reublog</description>
 		<copyright>2017</copyright>
-		<pubDate>Tue, 31 Oct 2017 22:34:40 GMT</pubDate>
-		<lastBuildDate>Tue, 31 Oct 2017 22:34:40 GMT</lastBuildDate>
+		<pubDate>Wed, 01 Nov 2017 08:29:08 GMT</pubDate>
+		<lastBuildDate>Wed, 01 Nov 2017 08:29:08 GMT</lastBuildDate>
+		<item>
+			<title>Code Generation on .NET</title>
+			<link>http://reubenbond.github.io/posts/codegen-1</link>
+			<description>&lt;p&gt;&lt;em&gt;This is the first part in what's hopefully a series of short posts covering code generation on the .NET platform.&lt;/em&gt;&lt;/p&gt;</description>
+			<enclosure url="http://reubenbond.github.io/images/header.jpg" length="0" type="image" />
+			<guid>http://reubenbond.github.io/posts/codegen-1</guid>
+			<pubDate>Wed, 01 Nov 2017 00:00:00 GMT</pubDate>
+			<content:encoded>&lt;p&gt;&lt;em&gt;This is the first part in what's hopefully a series of short posts covering code generation on the .NET platform.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;Almost every .NET application relies on code generation in some form, usually because they rely on a library which generates code as a part of how it functions. Eg, Json.NET &lt;a href="https://github.com/JamesNK/Newtonsoft.Json/blob/473a7721bd67cca8fef1ecc37da1951a1c180022/Src/Newtonsoft.Json/Utilities/DynamicReflectionDelegateFactory.cs"&gt;leverages code generation&lt;/a&gt; and so does &lt;a href="https://github.com/aspnet/MvcPrecompilation"&gt;ASP.NET&lt;/a&gt;, Entity Framework, &lt;a href="https://github.com/dotnet/orleans"&gt;Orleans&lt;/a&gt;, most serialization libraries, many dependency injection libraries, and probably every test mocking library.&lt;/p&gt;
+&lt;p&gt;Let's skip past &lt;em&gt;why&lt;/em&gt; code generation is useful and jump straight into a high level overview of code generation technologies for .NET.&lt;/p&gt;
+&lt;h2 id="kinds-of-code-generation"&gt;Kinds of Code Generation&lt;/h2&gt;
+&lt;p&gt;The 3 code gen methods for .NET which we'll discuss are: &lt;strong&gt;Expression Trees&lt;/strong&gt;, &lt;strong&gt;IL Generation&lt;/strong&gt;, and &lt;strong&gt;Syntax Generation&lt;/strong&gt;. There are other methods, such as text templating (eg using T4). Here are the pros and cons of each as I see them.&lt;/p&gt;
+&lt;h3 id="expression-trees"&gt;Expression Trees&lt;/h3&gt;
+&lt;p&gt;Using &lt;strong&gt;LINQ Expression Trees&lt;/strong&gt; to compile expressions at runtime.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;✔ Easy to use, expressive API.&lt;/li&gt;
+&lt;li&gt;❌ Not supported on AOT-only platforms like iOS.&lt;/li&gt;
+&lt;li&gt;❌ Not all language constructs are supported.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="il-generation"&gt;IL Generation&lt;/h3&gt;
+&lt;p&gt;Using &lt;strong&gt;Reflection.Emit&lt;/strong&gt; to dynamically create types and methods using Common Intermediate Langage (known as CIL or just IL), which is the assembly language of the CLR.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;✔ Can produce code which cannot be expressed in C#, eg access private members of some type.&lt;/li&gt;
+&lt;li&gt;❌ Very verbose.&lt;/li&gt;
+&lt;li&gt;❌ Very difficult to debug: Visual Studio will not show you IL for dynamic methods, they are represented as an opaque &lt;em&gt;Lightweight Function&lt;/em&gt; entry in the stack trace view.&lt;/li&gt;
+&lt;li&gt;❌ Difficult to implement higher level features like C#'s &lt;code&gt;async&lt;/code&gt;/&lt;code&gt;await&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;❌ Not supported on AOT-only platforms like iOS.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="syntax-generation"&gt;Syntax Generation&lt;/h3&gt;
+&lt;p&gt;Using &lt;strong&gt;Roslyn&lt;/strong&gt; or some other API to generate C# syntax trees or source code and compile it either at runtime or when the target project is built.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;✔ Easy access to all C# language features.&lt;/li&gt;
+&lt;li&gt;✔ Supported on AOT-only platforms, since output is C# code which can be compiled.&lt;/li&gt;
+&lt;li&gt;✔ Well supported: it's the C# compiler, it's not going away or being deprecated any time soon.&lt;/li&gt;
+&lt;li&gt;❌ API isn't always obvious since the primary purpose of the API is parsing/compiling code rather than generating it.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id="orleans"&gt;Orleans&lt;/h2&gt;
+&lt;p&gt;&lt;a href="https://github.com/dotnet/orleans"&gt;Microsoft Orleans&lt;/a&gt; uses the latter two approaches: IL and Roslyn. It uses Rosyn wherever possible, since it allows for easy access to C# language features like &lt;code&gt;async&lt;/code&gt; and since it's easy to comprehend both the code generator and the generated code. Otherwise, IL generation is used for two things:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Generating code at runtime. For example &lt;a href="https://github.com/dotnet/orleans/blob/375a98191ca40c27ca8ed61199a6a77a7995e75e/src/Orleans.Core/Serialization/ILSerializerGenerator.cs"&gt;&lt;code&gt;ILSerializerGenerator&lt;/code&gt;&lt;/a&gt; generates serializers as a last resort for types which we couldn't generate C# serializers for (for example, private inner classes). It's a faster and less restricted alternative to .NET's &lt;a href="https://msdn.microsoft.com/en-us/library/system.runtime.serialization.formatters.binary.binaryformatter(v=vs.110).aspx"&gt;&lt;code&gt;BinaryFormatter&lt;/code&gt;&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;Producing code which cannot be expressed in C#. For example, &lt;a href="https://github.com/dotnet/orleans/blob/375a98191ca40c27ca8ed61199a6a77a7995e75e/src/Orleans.Core.Abstractions/Serialization/FieldUtils.cs#"&gt;&lt;code&gt;FieldUtils&lt;/code&gt;&lt;/a&gt; provides access to private fields and methods for serialization.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id="general-strategy"&gt;General Strategy&lt;/h2&gt;
+&lt;p&gt;Regardless of which technology a library makes use of, code generation typically involves two phases:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Metadata Collection
+&lt;ul&gt;
+&lt;li&gt;The code generator takes some input and creates an abstract representation of it in order to drive the code synthesis process.&lt;/li&gt;
+&lt;li&gt;Eg, a library for deeply cloning objects might take a &lt;code&gt;Type&lt;/code&gt; as input and generate an object describing each field in that type.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Code Synthesis
+&lt;ul&gt;
+&lt;li&gt;The code generator uses the metadata model to drive the process of actually generating code (LINQ expressions, IL instructions, syntax tree nodes).&lt;/li&gt;
+&lt;li&gt;Eg, our deep cloning library will generate a method which takes an object of the specified type from the metadata model and then recursively copy each of the fields.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;The two phases can be merged for simple code generators. Orleans uses two phases. In phase 1, the input assembly is scanned and metadata is collected for types matching various criteria: Grain classes, Grain interfaces, serializable types, and custom serializer registrations. In phase 2, support classes are generated. For example, each grain interface has two classes generated: an RPC proxy and an RPC stub.&lt;/p&gt;
+&lt;h2 id="conclusion"&gt;Conclusion&lt;/h2&gt;
+&lt;p&gt;That's enough for now. Maybe next time we'll take a look at writing that hypothetical deep cloning library using IL generation. After that, we can take a look at a serialization library I've been working on which uses Roslyn for both metadata collection and syntax generation. If either of those things are interesting to you, let me know here or on &lt;a href="https://twitter.com/reubenbond"&gt;Twitter&lt;/a&gt;.&lt;/p&gt;
+</content:encoded>
+		</item>
 		<item>
 			<title>Deploying Wyam To GitHub Using Visual Studio Online</title>
 			<link>http://reubenbond.github.io/posts/2017-Oct-30-setting-up-wyam</link>

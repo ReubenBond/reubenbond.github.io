@@ -1,0 +1,251 @@
+﻿
+<!DOCTYPE html>
+<html lang="en">
+        <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
+
+        <title>reublog - Code Generation on .NET</title>
+        <meta name="description" content="&lt;p&gt;&lt;em&gt;This is the first part in what&#x27;s hopefully a series of short posts covering code generation on the .NET platform.&lt;/em&gt;&lt;/p&gt;" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">        
+
+        <link type="application/rss+xml" rel="alternate" title="reublog" href="/feed.rss" />
+                <link type="application/atom+xml" rel="alternate" title="reublog" href="/feed.atom" />
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+        <link rel="icon" href="/favicon.ico" type="image/x-icon">
+
+        <link href="/assets/css/bootstrap.min.css" rel="stylesheet" />
+        <link href="/assets/css/highlight.css" rel="stylesheet">
+        <link href="/assets/css/clean-blog.css" rel="stylesheet" />
+        <link href="/assets/css/master.css" rel="stylesheet" />
+        <link href="/assets/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+        <link href='//fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+        <link href='//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+        <link href="/assets/css/override.css" rel="stylesheet" />
+
+
+        <meta name="application-name" content="reublog" />
+        <meta name="msapplication-tooltip" content="reublog - Code Generation on .NET" />
+        <meta name="msapplication-starturl" content="/" />
+
+        <meta property="og:title" content="Code Generation on .NET" />
+        <meta property="og:image" content="http://reubenbond.github.io/images/header.jpg" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="http://reubenbond.github.io/posts/codegen-1" />
+        <meta property="article:published_time" content="2017-11-01T00:00:00.0000000" />
+                <meta property="article:tag" content="CodeGen" />
+
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:site" content="@ReubenBond" />
+
+        <script src="/assets/js/jquery.min.js"></script>
+        <script src="/assets/js/bootstrap.min.js"></script>     
+        <script src="/assets/js/highlight.pack.js"></script>   
+        <script src="/assets/js/clean-blog.js"></script>
+        <script src="/assets/js/d3.v3.min.js"></script>
+        <script src="/assets/js/trianglify.min.js"></script>
+        <script src="/assets/js/Please-compressed.js"></script>
+        <script src="/assets/js/background-check.min.js"></script>
+                
+        <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+        <!--[if lt IE 9]>
+                <script src="/assets/js/html5shiv.js"></script>
+                <script src="/assets/js/respond.min.js"></script>
+        <![endif]-->
+        
+        
+
+
+        </head>
+        <body>
+                
+                <!-- Navigation -->
+                <nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+                        <div class="container-fluid">
+                                <!-- Brand and toggle get grouped for better mobile display -->
+                                <div class="navbar-header page-scroll">
+                                        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse">
+                                        <span class="sr-only">Toggle navigation</span>
+                                        <span class="icon-bar"></span>
+                                        <span class="icon-bar"></span>
+                                        <span class="icon-bar"></span>
+                                        </button>
+                                        <a class="navbar-brand" href="/">reublog</a>
+                                </div>
+                        
+                                <!-- Collect the nav links, forms, and other content for toggling -->
+                                <div class="collapse navbar-collapse" id="navbar-collapse">
+                                        <ul class="nav navbar-nav navbar-right">
+                                                    <li><a href="https://twitter.com/ReubenBond">Twitter: @ReubenBond</a></li>
+ 
+                                                    <div class="follow-button">
+                                        </ul>
+                                </div>
+                                <!-- /.navbar-collapse -->
+                        </div>
+                        <!-- /.container -->
+                </nav>
+                
+                <!-- Page Header -->
+                <header class="intro-header" id="intro-header" style="background-image: url(&quot;/images/header.jpg&quot;)">
+                        <div class="container">
+                                <div class="row">
+                                        <div class="col-md-12">
+
+    
+<div class="post-heading">
+    <h1>Code Generation on .NET</h1>
+    <div class="meta">        
+Published on Wednesday, November 1, 2017<br>    </div>
+        <div class="tags">
+                    <a role="button" href="/tags/CodeGen" class="btn btn-default btn-xs">CodeGen</a>
+        </div>     
+</div>
+                                        </div>
+                                </div>
+                        </div>
+                </header>
+                
+                <!-- Main Content -->
+                <div class="container">
+                        <div class="row">
+                                <div id="content" class="col-md-12">
+                                        
+
+<p><em>This is the first part in what's hopefully a series of short posts covering code generation on the .NET platform.</em></p>
+<p>Almost every .NET application relies on code generation in some form, usually because they rely on a library which generates code as a part of how it functions. Eg, Json.NET <a href="https://github.com/JamesNK/Newtonsoft.Json/blob/473a7721bd67cca8fef1ecc37da1951a1c180022/Src/Newtonsoft.Json/Utilities/DynamicReflectionDelegateFactory.cs">leverages code generation</a> and so does <a href="https://github.com/aspnet/MvcPrecompilation">ASP.NET</a>, Entity Framework, <a href="https://github.com/dotnet/orleans">Orleans</a>, most serialization libraries, many dependency injection libraries, and probably every test mocking library.</p>
+<p>Let's skip past <em>why</em> code generation is useful and jump straight into a high level overview of code generation technologies for .NET.</p>
+<h2 id="kinds-of-code-generation">Kinds of Code Generation</h2>
+<p>The 3 code gen methods for .NET which we'll discuss are: <strong>Expression Trees</strong>, <strong>IL Generation</strong>, and <strong>Syntax Generation</strong>. There are other methods, such as text templating (eg using T4). Here are the pros and cons of each as I see them.</p>
+<h3 id="expression-trees">Expression Trees</h3>
+<p>Using <strong>LINQ Expression Trees</strong> to compile expressions at runtime.</p>
+<ul>
+<li>✔ Easy to use, expressive API.</li>
+<li>❌ Not supported on AOT-only platforms like iOS.</li>
+<li>❌ Not all language constructs are supported.</li>
+</ul>
+<h3 id="il-generation">IL Generation</h3>
+<p>Using <strong>Reflection.Emit</strong> to dynamically create types and methods using Common Intermediate Langage (known as CIL or just IL), which is the assembly language of the CLR.</p>
+<ul>
+<li>✔ Can produce code which cannot be expressed in C#, eg access private members of some type.</li>
+<li>❌ Very verbose.</li>
+<li>❌ Very difficult to debug: Visual Studio will not show you IL for dynamic methods, they are represented as an opaque <em>Lightweight Function</em> entry in the stack trace view.</li>
+<li>❌ Difficult to implement higher level features like C#'s <code>async</code>/<code>await</code>.</li>
+<li>❌ Not supported on AOT-only platforms like iOS.</li>
+</ul>
+<h3 id="syntax-generation">Syntax Generation</h3>
+<p>Using <strong>Roslyn</strong> or some other API to generate C# syntax trees or source code and compile it either at runtime or when the target project is built.</p>
+<ul>
+<li>✔ Easy access to all C# language features.</li>
+<li>✔ Supported on AOT-only platforms, since output is C# code which can be compiled.</li>
+<li>✔ Well supported: it's the C# compiler, it's not going away or being deprecated any time soon.</li>
+<li>❌ API isn't always obvious since the primary purpose of the API is parsing/compiling code rather than generating it.</li>
+</ul>
+<h2 id="orleans">Orleans</h2>
+<p><a href="https://github.com/dotnet/orleans">Microsoft Orleans</a> uses the latter two approaches: IL and Roslyn. It uses Rosyn wherever possible, since it allows for easy access to C# language features like <code>async</code> and since it's easy to comprehend both the code generator and the generated code. Otherwise, IL generation is used for two things:</p>
+<ol>
+<li>Generating code at runtime. For example <a href="https://github.com/dotnet/orleans/blob/375a98191ca40c27ca8ed61199a6a77a7995e75e/src/Orleans.Core/Serialization/ILSerializerGenerator.cs"><code>ILSerializerGenerator</code></a> generates serializers as a last resort for types which we couldn't generate C# serializers for (for example, private inner classes). It's a faster and less restricted alternative to .NET's <a href="https://msdn.microsoft.com/en-us/library/system.runtime.serialization.formatters.binary.binaryformatter(v=vs.110).aspx"><code>BinaryFormatter</code></a>.</li>
+<li>Producing code which cannot be expressed in C#. For example, <a href="https://github.com/dotnet/orleans/blob/375a98191ca40c27ca8ed61199a6a77a7995e75e/src/Orleans.Core.Abstractions/Serialization/FieldUtils.cs#"><code>FieldUtils</code></a> provides access to private fields and methods for serialization.</li>
+</ol>
+<h2 id="general-strategy">General Strategy</h2>
+<p>Regardless of which technology a library makes use of, code generation typically involves two phases:</p>
+<ol>
+<li>Metadata Collection
+<ul>
+<li>The code generator takes some input and creates an abstract representation of it in order to drive the code synthesis process.</li>
+<li>Eg, a library for deeply cloning objects might take a <code>Type</code> as input and generate an object describing each field in that type.</li>
+</ul>
+</li>
+<li>Code Synthesis
+<ul>
+<li>The code generator uses the metadata model to drive the process of actually generating code (LINQ expressions, IL instructions, syntax tree nodes).</li>
+<li>Eg, our deep cloning library will generate a method which takes an object of the specified type from the metadata model and then recursively copy each of the fields.</li>
+</ul>
+</li>
+</ol>
+<p>The two phases can be merged for simple code generators. Orleans uses two phases. In phase 1, the input assembly is scanned and metadata is collected for types matching various criteria: Grain classes, Grain interfaces, serializable types, and custom serializer registrations. In phase 2, support classes are generated. For example, each grain interface has two classes generated: an RPC proxy and an RPC stub.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>That's enough for now. Maybe next time we'll take a look at writing that hypothetical deep cloning library using IL generation. After that, we can take a look at a serialization library I've been working on which uses Roslyn for both metadata collection and syntax generation. If either of those things are interesting to you, let me know here or on <a href="https://twitter.com/reubenbond">Twitter</a>.</p>
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+    var disqus_shortname = 'reublog'; // required: replace example with your forum shortname
+    var disqus_identifier = 'codegen-1';
+    var disqus_title = 'Code Generation on .NET';
+    var disqus_url = 'http://reubenbond.github.io/posts/codegen-1';
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+    
+    /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+    var disqus_shortname = 'reublog'; // required: replace example with your forum shortname
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+                                </div>
+                        </div>
+                </div>
+                                
+                <!-- Footer -->
+                <footer>
+                        <div class="container">
+        <div class="row">
+                <div class="col-md-12 text-center">
+                    <div>
+                        <a href="https://twitter.com/ReubenBond?ref_src=twsrc%5Etfw" class="twitter-follow-button" data-size="large" data-show-count="false">Follow @ReubenBond</a>
+                    </div>
+                    <p class="copyright text-muted">
+                        Copyright © 2017
+                        <br />
+                            <a href="/feed.rss"><i class="fa fa-rss"></i> RSS Feed</a>
+                        |
+                            <a href="/feed.atom"><i class="fa fa-rss"></i> Atom Feed</a>
+                        <br />
+                        <strong><a href="https://wyam.io">Generated by Wyam</a></strong>
+                    </p>
+                </div>
+        </div>
+</div>
+
+                </footer> 
+
+                
+                <script>hljs.initHighlightingOnLoad();</script>
+
+
+                <script>
+                        BackgroundCheck.init({
+                                targets: '.intro-header,.navbar',
+                                images: '.intro-header'
+                        });
+                </script>
+
+                <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+                <!-- Global site tag (gtag.js) - Google Analytics -->
+                <script async src="https://www.googletagmanager.com/gtag/js?id=UA-77999682-2"></script>
+                <script>
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+
+                gtag('config', 'UA-77999682-2');
+                </script>
+        </body>
+</html>
+
