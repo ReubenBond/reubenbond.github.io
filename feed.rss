@@ -5,8 +5,8 @@
 		<link>http://reubenbond.github.io/</link>
 		<description>reublog</description>
 		<copyright>2017</copyright>
-		<pubDate>Wed, 01 Nov 2017 09:08:00 GMT</pubDate>
-		<lastBuildDate>Wed, 01 Nov 2017 09:08:00 GMT</lastBuildDate>
+		<pubDate>Wed, 01 Nov 2017 21:11:36 GMT</pubDate>
+		<lastBuildDate>Wed, 01 Nov 2017 21:11:36 GMT</lastBuildDate>
 		<item>
 			<title>Code Generation on .NET</title>
 			<link>http://reubenbond.github.io/posts/codegen-1</link>
@@ -23,7 +23,8 @@
 &lt;p&gt;Using &lt;strong&gt;LINQ Expression Trees&lt;/strong&gt; to compile expressions at runtime.&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;✔ Easy to use, expressive API.&lt;/li&gt;
-&lt;li&gt;❌ Not supported on AOT-only platforms like iOS.&lt;/li&gt;
+&lt;li&gt;✔ Allows level of access to private members.&lt;/li&gt;
+&lt;li&gt;❌ Not fully supported on AOT-only platforms like iOS. Expression Trees will be interpreted instead of compiled.&lt;/li&gt;
 &lt;li&gt;❌ Not all language constructs are supported.&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h3 id="il-generation"&gt;IL Generation&lt;/h3&gt;
@@ -42,6 +43,7 @@
 &lt;li&gt;✔ Supported on AOT-only platforms, since output is C# code which can be compiled.&lt;/li&gt;
 &lt;li&gt;✔ Well supported: it's the C# compiler, it's not going away or being deprecated any time soon.&lt;/li&gt;
 &lt;li&gt;❌ API isn't always obvious since the primary purpose of the API is parsing/compiling code rather than generating it.&lt;/li&gt;
+&lt;li&gt;Note: to support runtime code generationn you need to include Roslyn with your app, which can add around 6MB to your distribution.&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id="orleans"&gt;Orleans&lt;/h2&gt;
 &lt;p&gt;&lt;a href="https://github.com/dotnet/orleans"&gt;Microsoft Orleans&lt;/a&gt; uses the latter two approaches: IL and Roslyn. It uses Rosyn wherever possible, since it allows for easy access to C# language features like &lt;code&gt;async&lt;/code&gt; and since it's easy to comprehend both the code generator and the generated code. Otherwise, IL generation is used for two things:&lt;/p&gt;

@@ -123,7 +123,8 @@ Published on Wednesday, November 1, 2017<br>    </div>
 <p>Using <strong>LINQ Expression Trees</strong> to compile expressions at runtime.</p>
 <ul>
 <li>✔ Easy to use, expressive API.</li>
-<li>❌ Not supported on AOT-only platforms like iOS.</li>
+<li>✔ Allows level of access to private members.</li>
+<li>❌ Not fully supported on AOT-only platforms like iOS. Expression Trees will be interpreted instead of compiled.</li>
 <li>❌ Not all language constructs are supported.</li>
 </ul>
 <h3 id="il-generation">IL Generation</h3>
@@ -142,6 +143,7 @@ Published on Wednesday, November 1, 2017<br>    </div>
 <li>✔ Supported on AOT-only platforms, since output is C# code which can be compiled.</li>
 <li>✔ Well supported: it's the C# compiler, it's not going away or being deprecated any time soon.</li>
 <li>❌ API isn't always obvious since the primary purpose of the API is parsing/compiling code rather than generating it.</li>
+<li>Note: to support runtime code generationn you need to include Roslyn with your app, which can add around 6MB to your distribution.</li>
 </ul>
 <h2 id="orleans">Orleans</h2>
 <p><a href="https://github.com/dotnet/orleans">Microsoft Orleans</a> uses the latter two approaches: IL and Roslyn. It uses Rosyn wherever possible, since it allows for easy access to C# language features like <code>async</code> and since it's easy to comprehend both the code generator and the generated code. Otherwise, IL generation is used for two things:</p>
