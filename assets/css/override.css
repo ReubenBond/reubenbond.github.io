@@ -1,5 +1,4 @@
 body {
-  font-size: 22px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
   background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkAgMAAAANjH3HAAAACVBMVEUaGhohISElJSUh9lebAAABwElEQVR4AY3Vua3gOBgGQQXZhgKYgwHJYAA0Ksu9CAh6hxbTbvFzfx6rNEGlHY6z5KvMw4s43mN2Z5fqYLzKyrfyXhXKnKBdD9n58UWW3Vlb3mOCmWoHHZbdV5lv8t7Ver6ldsfqumVAdbblxxcZVcd7QWq2Y6VsadS4ZTzFDbFa5XivqlxVUFG1Jd6k66u8x0RIOw0cXAiNW2z58bJ5r1LTQtVVuy1x2jK+yLTlxy3v5RogszEXSB0ZF4iYWLbMMUBGPDbvpRQUVUV9kvGU6ynrIe9FOqssJcQ4oqurCjV6ytmqco4SwvGeNCoJaphwSHoK13cyuuU9ZaQI0lB1qB8zT3GL2XjKueU9pR+gH0OlqvGUzHWLQ81O0Dg95L3Uj9qxKx0pr3LdYrnlvQKlUEnV/8v4Xt6bThZROwaO5QfTUyY4GCBWu8Wf/nO4ULtj/li3mE9Z47zlx/WU94Iq7RD5XuZ6ynjIGn9yr1VhFaq2NH9s4bP4Rt5j2NFO5MBXGVsmsD5v3gslYORsd8R1i1rrIUoLKLXlvVhgKH7ApToyhk21TJhbLDvdN151vEetJtKdOtYo4SmnOvhGpjpe+xuj3X723ghdygAAAABJRU5ErkJggg==) !important;
   background-color: #222 !important;
@@ -44,27 +43,13 @@ body {
   background-color: #444;
 }
 
-@media only screen and (min-width: 1170px) {
-  .navbar-custom.is-fixed {
-    background-color:#080808 !important;
-  }
-  
-  .navbar-custom.is-fixed .navbar-brand {
-    color: #FFF;
-  }
-
-  .navbar-custom.is-fixed .nav li a {
-    color: #FFF;
-  }
-}
-
 a {
   color: #4183C4;
 }
 
 code {
   font-family: "Menlo", Consolas, "Liberation Mono", Menlo, Courier, monospace !important;
-  font-size: 18px !important;
+  font-size: 125% !important;
   background: #222!important;
   color: #ccc!important;
   border: 1px solid rgba(255, 255, 255, .1) !important;
@@ -82,7 +67,7 @@ pre code {
 }
 
 pre, pre.prettyprint {
-  padding: 16px !important;
+  padding: 6px !important;
   background: #222!important;
   border: 1px solid rgba(255, 255, 255, .1) !important;
 }
@@ -123,4 +108,30 @@ footer {
 
 .blockquote {
   color: #e7e9ee;
+}
+
+@media only screen and (min-width: 1170px) {
+  body {
+    font-size: 22px;
+  }
+
+  .navbar-custom.is-fixed {
+    background-color:#080808 !important;
+  }
+  
+  .navbar-custom.is-fixed .navbar-brand {
+    color: #FFF;
+  }
+
+  .navbar-custom.is-fixed .nav li a {
+    color: #FFF;
+  }
+  
+  code {
+    font-size: 18px !important;
+  }
+  
+  pre, pre.prettyprint {
+    padding: 16px !important;
+  }
 }
