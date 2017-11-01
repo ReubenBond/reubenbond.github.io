@@ -4,7 +4,7 @@
 	<id>http://reubenbond.github.io/</id>
 	<title>reublog</title>
 	<rights>2017</rights>
-	<updated>2017-11-01T21:29:10Z</updated>
+	<updated>2017-11-01T21:30:57Z</updated>
 	<logo>http://reubenbond.github.io/images/header.jpg</logo>
 	<subtitle>reublog</subtitle>
 	<entry>
@@ -41,7 +41,7 @@
 &lt;h2 id="orleans"&gt;Orleans&lt;/h2&gt;
 &lt;p&gt;&lt;a href="https://github.com/dotnet/orleans"&gt;Microsoft Orleans&lt;/a&gt; uses the latter two approaches: IL and Roslyn. It uses Rosyn wherever possible, since it allows for easy access to C# language features like &lt;code&gt;async&lt;/code&gt; and since it's easy to comprehend both the code generator and the generated code. Otherwise, IL generation is used for two things:&lt;/p&gt;
 &lt;ol&gt;
-&lt;li&gt;Generating code at runtime. For example &lt;a href="https://github.com/dotnet/orleans/blob/375a98191ca40c27ca8ed61199a6a77a7995e75e/src/Orleans.Core/Serialization/ILSerializerGenerator.cs"&gt;&lt;code&gt;ILSerializerGenerator&lt;/code&gt;&lt;/a&gt; generates serializers as a last resort for types which we couldn't generate C# serializers for (for example, private inner classes). It's a faster and less restricted alternative to .NET's &lt;a href="https://msdn.microsoft.com/en-us/library/system.runtime.serialization.formatters.binary.binaryformatter(v=vs.110).aspx"&gt;&lt;code&gt;BinaryFormatter&lt;/code&gt;&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;Generating code at runtime. For example &lt;a href="https://github.com/dotnet/orleans/blob/375a98191ca40c27ca8ed61199a6a77a7995e75e/src/Orleans.Core/Serialization/ILSerializerGenerator.cs"&gt;&lt;code&gt;ILSerializerGenerator&lt;/code&gt;&lt;/a&gt; generates serializers as a last resort for types which C# serializers couldn't be generated for (for example, private inner classes). It's a faster and less restricted alternative to .NET's &lt;a href="https://msdn.microsoft.com/en-us/library/system.runtime.serialization.formatters.binary.binaryformatter(v=vs.110).aspx"&gt;&lt;code&gt;BinaryFormatter&lt;/code&gt;&lt;/a&gt;.&lt;/li&gt;
 &lt;li&gt;Producing code which cannot be expressed in C#. For example, &lt;a href="https://github.com/dotnet/orleans/blob/375a98191ca40c27ca8ed61199a6a77a7995e75e/src/Orleans.Core.Abstractions/Serialization/FieldUtils.cs#"&gt;&lt;code&gt;FieldUtils&lt;/code&gt;&lt;/a&gt; provides access to private fields and methods for serialization.&lt;/li&gt;
 &lt;/ol&gt;
 &lt;h2 id="general-strategy"&gt;General Strategy&lt;/h2&gt;
