@@ -121,30 +121,24 @@ Published on Wednesday, November 1, 2017<br>    </div>
 <p>The 3 code gen methods for .NET which we'll discuss are: <strong>Expression Trees</strong>, <strong>IL Generation</strong>, and <strong>Syntax Generation</strong>. There are other methods, such as text templating (eg using T4). Here are the pros and cons of each as I see them.</p>
 <h3 id="expression-trees">Expression Trees</h3>
 <p>Using <strong>LINQ Expression Trees</strong> to compile expressions at runtime.</p>
-<ul>
-<li>✔ Easy to use, expressive API.</li>
-<li>✔ Allows level of access to private members.</li>
-<li>❌ Not fully supported on AOT-only platforms like iOS. Expression Trees will be interpreted instead of compiled.</li>
-<li>❌ Not all language constructs are supported.</li>
-</ul>
+<p>✔ Easy to use, expressive API.<br/>
+✔ Allows level of access to private members.<br/>
+❌ Not fully supported on AOT-only platforms like iOS. Expression Trees will be interpreted instead of compiled.<br/>
+❌ Not all language constructs are supported.<br/></p>
 <h3 id="il-generation">IL Generation</h3>
 <p>Using <strong>Reflection.Emit</strong> to dynamically create types and methods using Common Intermediate Langage (known as CIL or just IL), which is the assembly language of the CLR.</p>
-<ul>
-<li>✔ Can produce code which cannot be expressed in C#, eg access private members of some type.</li>
-<li>❌ Very verbose.</li>
-<li>❌ Very difficult to debug: Visual Studio will not show you IL for dynamic methods, they are represented as an opaque <em>Lightweight Function</em> entry in the stack trace view.</li>
-<li>❌ Difficult to implement higher level features like C#'s <code>async</code>/<code>await</code>.</li>
-<li>❌ Not supported on AOT-only platforms like iOS.</li>
-</ul>
+<p>✔ Can produce code which cannot be expressed in C#, eg access private members of some type.<br/>
+❌ Very verbose.<br/>
+❌ Very difficult to debug: Visual Studio will not show you IL for dynamic methods, they are represented as an opaque <em>Lightweight Function</em> entry in the stack trace view.<br/>
+❌ Difficult to implement higher level features like C#'s <code>async</code>/<code>await</code>.<br/>
+❌ Not supported on AOT-only platforms like iOS.<br/></p>
 <h3 id="syntax-generation">Syntax Generation</h3>
 <p>Using <strong>Roslyn</strong> or some other API to generate C# syntax trees or source code and compile it either at runtime or when the target project is built.</p>
-<ul>
-<li>✔ Easy access to all C# language features.</li>
-<li>✔ Supported on AOT-only platforms, since output is C# code which can be compiled.</li>
-<li>✔ Well supported: it's the C# compiler, it's not going away or being deprecated any time soon.</li>
-<li>❌ API isn't always obvious since the primary purpose of the API is parsing/compiling code rather than generating it.</li>
-<li>Note: to support runtime code generationn you need to include Roslyn with your app, which can add around 6MB to your distribution.</li>
-</ul>
+<p>✔ Easy access to all C# language features.<br/>
+✔ Supported on AOT-only platforms, since output is C# code which can be compiled.<br/>
+✔ Well supported: it's the C# compiler, it's not going away or being deprecated any time soon.<br/>
+❌ API isn't always obvious since the primary purpose of the API is parsing/compiling code rather than generating it.<br/>
+<em>Note:</em> to support runtime code generationn you need to include Roslyn with your app, which can add around 6MB to your distribution.<br/></p>
 <h2 id="orleans">Orleans</h2>
 <p><a href="https://github.com/dotnet/orleans">Microsoft Orleans</a> uses the latter two approaches: IL and Roslyn. It uses Rosyn wherever possible, since it allows for easy access to C# language features like <code>async</code> and since it's easy to comprehend both the code generator and the generated code. Otherwise, IL generation is used for two things:</p>
 <ol>
