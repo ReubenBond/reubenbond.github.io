@@ -40,6 +40,16 @@ a {
   color: #4183C4;
 }
 
+p {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+h1, h2, h3, .h1, .h2, .h3 {
+  margin-top: 30px;
+  margin-bottom: 10px;
+}
+
 code {
   font-family: "Menlo", Consolas, "Liberation Mono", Menlo, Courier, monospace !important;
   font-size: 125% !important;
