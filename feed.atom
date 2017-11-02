@@ -4,7 +4,7 @@
 	<id>http://reubenbond.github.io/</id>
 	<title>reublog</title>
 	<rights>2017</rights>
-	<updated>2017-11-01T21:30:57Z</updated>
+	<updated>2017-11-02T01:49:12Z</updated>
 	<logo>http://reubenbond.github.io/images/header.jpg</logo>
 	<subtitle>reublog</subtitle>
 	<entry>
@@ -20,23 +20,23 @@
 &lt;p&gt;The 3 code gen methods for .NET which we'll discuss are: &lt;strong&gt;Expression Trees&lt;/strong&gt;, &lt;strong&gt;IL Generation&lt;/strong&gt;, and &lt;strong&gt;Syntax Generation&lt;/strong&gt;. There are other methods, such as text templating (eg using T4). Here are the pros and cons of each as I see them.&lt;/p&gt;
 &lt;h3 id="expression-trees"&gt;Expression Trees&lt;/h3&gt;
 &lt;p&gt;Using &lt;strong&gt;LINQ Expression Trees&lt;/strong&gt; to compile expressions at runtime.&lt;/p&gt;
-&lt;p&gt;✔ Easy to use, expressive API.&lt;br/&gt;
-✔ Allows level of access to private members.&lt;br/&gt;
-❌ Not fully supported on AOT-only platforms like iOS. Expression Trees will be interpreted instead of compiled.&lt;br/&gt;
-❌ Not all language constructs are supported.&lt;br/&gt;&lt;/p&gt;
+&lt;p&gt;&lt;i class="fa fa-check text-success fa-fw" aria-hidden="true"&gt;&lt;/i&gt; Easy to use, expressive API.&lt;br/&gt;
+&lt;i class="fa fa-check text-success fa-fw" aria-hidden="true"&gt;&lt;/i&gt; Allows level of access to private members.&lt;br/&gt;
+&lt;i class="fa fa-times text-danger fa-fw" aria-hidden="true"&gt;&lt;/i&gt; Not fully supported on AOT-only platforms like iOS. Expression Trees will be interpreted instead of compiled.&lt;br/&gt;
+&lt;i class="fa fa-times text-danger fa-fw" aria-hidden="true"&gt;&lt;/i&gt; Not all language constructs are supported.&lt;br/&gt;&lt;/p&gt;
 &lt;h3 id="il-generation"&gt;IL Generation&lt;/h3&gt;
 &lt;p&gt;Using &lt;strong&gt;Reflection.Emit&lt;/strong&gt; to dynamically create types and methods using Common Intermediate Langage (known as CIL or just IL), which is the assembly language of the CLR.&lt;/p&gt;
-&lt;p&gt;✔ Can produce code which cannot be expressed in C#, eg access private members of some type.&lt;br/&gt;
-❌ Very verbose.&lt;br/&gt;
-❌ Very difficult to debug: Visual Studio will not show you IL for dynamic methods, they are represented as an opaque &lt;em&gt;Lightweight Function&lt;/em&gt; entry in the stack trace view.&lt;br/&gt;
-❌ Difficult to implement higher level features like C#'s &lt;code&gt;async&lt;/code&gt;/&lt;code&gt;await&lt;/code&gt;.&lt;br/&gt;
-❌ Not supported on AOT-only platforms like iOS.&lt;br/&gt;&lt;/p&gt;
+&lt;p&gt;&lt;i class="fa fa-check text-success fa-fw" aria-hidden="true"&gt;&lt;/i&gt; Can produce code which cannot be expressed in C#, eg access private members of some type.&lt;br/&gt;
+&lt;i class="fa fa-times text-danger fa-fw" aria-hidden="true"&gt;&lt;/i&gt; Very verbose.&lt;br/&gt;
+&lt;i class="fa fa-times text-danger fa-fw" aria-hidden="true"&gt;&lt;/i&gt; Very difficult to debug: Visual Studio will not show you IL for dynamic methods, they are represented as an opaque &lt;em&gt;Lightweight Function&lt;/em&gt; entry in the stack trace view.&lt;br/&gt;
+&lt;i class="fa fa-times text-danger fa-fw" aria-hidden="true"&gt;&lt;/i&gt; Difficult to implement higher level features like C#'s &lt;code&gt;async&lt;/code&gt;/&lt;code&gt;await&lt;/code&gt;.&lt;br/&gt;
+&lt;i class="fa fa-times text-danger fa-fw" aria-hidden="true"&gt;&lt;/i&gt; Not supported on AOT-only platforms like iOS.&lt;br/&gt;&lt;/p&gt;
 &lt;h3 id="syntax-generation"&gt;Syntax Generation&lt;/h3&gt;
 &lt;p&gt;Using &lt;strong&gt;Roslyn&lt;/strong&gt; or some other API to generate C# syntax trees or source code and compile it either at runtime or when the target project is built.&lt;/p&gt;
-&lt;p&gt;✔ Easy access to all C# language features.&lt;br/&gt;
-✔ Supported on AOT-only platforms, since output is C# code which can be compiled.&lt;br/&gt;
-✔ Well supported: it's the C# compiler, it's not going away or being deprecated any time soon.&lt;br/&gt;
-❌ API isn't always obvious since the primary purpose of the API is parsing/compiling code rather than generating it.&lt;br/&gt;
+&lt;p&gt;&lt;i class="fa fa-check text-success fa-fw" aria-hidden="true"&gt;&lt;/i&gt; Easy access to all C# language features.&lt;br/&gt;
+&lt;i class="fa fa-check text-success fa-fw" aria-hidden="true"&gt;&lt;/i&gt; Supported on AOT-only platforms, since output is C# code which can be compiled.&lt;br/&gt;
+&lt;i class="fa fa-check text-success fa-fw" aria-hidden="true"&gt;&lt;/i&gt; Well supported: it's the C# compiler, it's not going away or being deprecated any time soon.&lt;br/&gt;
+&lt;i class="fa fa-times text-danger fa-fw" aria-hidden="true"&gt;&lt;/i&gt; API isn't always obvious since the primary purpose of the API is parsing/compiling code rather than generating it.&lt;br/&gt;
 &lt;em&gt;Note:&lt;/em&gt; to support runtime code generationn you need to include Roslyn with your app, which can add around 6MB to your distribution.&lt;br/&gt;&lt;/p&gt;
 &lt;h2 id="orleans"&gt;Orleans&lt;/h2&gt;
 &lt;p&gt;&lt;a href="https://github.com/dotnet/orleans"&gt;Microsoft Orleans&lt;/a&gt; uses the latter two approaches: IL and Roslyn. It uses Rosyn wherever possible, since it allows for easy access to C# language features like &lt;code&gt;async&lt;/code&gt; and since it's easy to comprehend both the code generator and the generated code. Otherwise, IL generation is used for two things:&lt;/p&gt;
