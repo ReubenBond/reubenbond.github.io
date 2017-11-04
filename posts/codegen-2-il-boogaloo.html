@@ -1,0 +1,338 @@
+﻿
+<!DOCTYPE html>
+<html lang="en">
+        <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
+
+        <title>reublog - .NET IL Generation - Writing DeepCopy</title>
+        <meta name="description" content="&lt;p&gt;&lt;em&gt;This is the second part in a series of short posts covering code generation on the .NET platform.&lt;/em&gt;&lt;/p&gt;" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">        
+
+        <link type="application/rss+xml" rel="alternate" title="reublog" href="/feed.rss" />
+                <link type="application/atom+xml" rel="alternate" title="reublog" href="/feed.atom" />
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+        <link rel="icon" href="/favicon.ico" type="image/x-icon">
+
+        <link href="/assets/css/bootstrap.min.css" rel="stylesheet" />
+        <link href="/assets/css/highlight.css" rel="stylesheet">
+        <link href="/assets/css/clean-blog.css" rel="stylesheet" />
+        <link href="/assets/css/master.css" rel="stylesheet" />
+        <link href="/assets/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+        <link href='//fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+        <link href='//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+        <link href="/assets/css/override.css" rel="stylesheet" />
+
+
+        <meta name="application-name" content="reublog" />
+        <meta name="msapplication-tooltip" content="reublog - .NET IL Generation - Writing DeepCopy" />
+        <meta name="msapplication-starturl" content="/" />
+
+        <meta property="og:title" content=".NET IL Generation - Writing DeepCopy" />
+        <meta property="og:image" content="http://reubenbond.github.io/images/codegen-1-banner.png" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="http://reubenbond.github.io/posts/codegen-2-il-boogaloo" />
+        <meta property="article:published_time" content="2017-11-03T00:00:00.0000000" />
+                <meta property="article:tag" content="CodeGen" />
+        <meta property="article:tag" content="IL" />
+
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:site" content="@ReubenBond" />
+
+        <script src="/assets/js/jquery.min.js"></script>
+        <script src="/assets/js/bootstrap.min.js"></script>     
+        <script src="/assets/js/highlight.pack.js"></script>   
+        <script src="/assets/js/clean-blog.js"></script>
+        <script src="/assets/js/d3.v3.min.js"></script>
+        <script src="/assets/js/trianglify.min.js"></script>
+        <script src="/assets/js/Please-compressed.js"></script>
+        <script src="/assets/js/background-check.min.js"></script>
+                
+        <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+        <!--[if lt IE 9]>
+                <script src="/assets/js/html5shiv.js"></script>
+                <script src="/assets/js/respond.min.js"></script>
+        <![endif]-->
+        
+        
+
+
+        </head>
+        <body>
+                
+                <!-- Navigation -->
+                <nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+                        <div class="container-fluid">
+                                <!-- Brand and toggle get grouped for better mobile display -->
+                                <div class="navbar-header page-scroll">
+                                        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse">
+                                        <span class="sr-only">Toggle navigation</span>
+                                        <span class="icon-bar"></span>
+                                        <span class="icon-bar"></span>
+                                        <span class="icon-bar"></span>
+                                        </button>
+                                        <a class="navbar-brand" href="/">reublog</a>
+                                </div>
+                        
+                                <!-- Collect the nav links, forms, and other content for toggling -->
+                                <div class="collapse navbar-collapse" id="navbar-collapse">
+                                        <ul class="nav navbar-nav navbar-right">
+                                                    <li><a href="https://twitter.com/ReubenBond">Twitter: @ReubenBond</a></li>
+ 
+                                                    <div class="follow-button">
+                                        </ul>
+                                </div>
+                                <!-- /.navbar-collapse -->
+                        </div>
+                        <!-- /.container -->
+                </nav>
+                
+                <!-- Page Header -->
+                <header class="intro-header" id="intro-header" style="background-image: url(&quot;/images/codegen-1-banner.png&quot;)">
+                        <div class="container">
+                                <div class="row">
+                                        <div class="col-md-12">
+
+    
+<div class="post-heading">
+    <h1>.NET IL Generation - Writing DeepCopy</h1>
+        <h2 class="subheading">A brief overview of code generation APIs in .NET</h2>
+    <div class="meta">        
+Published on Friday, November 3, 2017<br>    </div>
+        <div class="tags">
+                    <a role="button" href="/tags/CodeGen" class="btn btn-default btn-xs">CodeGen</a>
+                    <a role="button" href="/tags/IL" class="btn btn-default btn-xs">IL</a>
+        </div>     
+</div>
+                                        </div>
+                                </div>
+                        </div>
+                </header>
+                
+                <!-- Main Content -->
+                <div class="container">
+                        <div class="row">
+                                <div id="content" class="col-md-12">
+                                        
+
+<p><em>This is the second part in a series of short posts covering code generation on the .NET platform.</em></p>
+<p>Last time on reublog we skimmed over some methods to generate code on .NET and one of them was emitting CLR assembly language, known as Common Intermediate Language, or IL for short. IL Generation is an extremely useful technique since it lets us circumvent the rules C# and other languages put in place to protect us from our own stupidity. Without those rules, we can implement all kinds of fancy foot guns. Rules like “don't access private members of types you don't know” and “don't modify <code>readonly</code> fields”. The last one there is interesting: C#'s <code>readonly</code> translates into <code>initonly</code> on the IL/metadata level so theoretically we shouldn't be able to modify those fields even using IL. As a matter of fact we can, but it comes at a cost: our IL will no longer be verifiable. That means that certain tools will bark at you if you try to write IL code which commits this sin, tools such as <a href="https://docs.microsoft.com/en-us/dotnet/framework/tools/peverify-exe-peverify-tool">PEVerify</a> and <a href="https://github.com/dotnet/corert/tree/master/src/ILVerify">ILVerify</a>. Verifiable code also has ramifications for <a href="https://docs.microsoft.com/en-us/dotnet/framework/misc/security-transparent-code">Security-Transparent Code</a>. Thankfully for us, Code Access Security and Security Transparent Code <a href="https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/porting.md#code-access-security-cas">don't exist in .NET Core</a> and they usually don't cause issue for .NET Framework.</p>
+<p>Today we're going to implement the guts of a library for creating deep copies of objects. Essentially it provides one method:</p>
+<pre><code class="language-C#">public static T Copy&lt;T&gt;(T original);
+</code></pre>
+<p>Our library will be called <em>DeepCopy</em> and the source is up on GitHub at <a href="https://github.com/ReubenBond/DeepCopy">ReubenBond/DeepCopy</a> feel free to mess about with it.</p>
+<p>Deep copying is important for frameworks such as <a href="https://github.com/dotnet/orleans">Orleans</a>, since it allows us to avoid serializing &amp; deserialzing objects sent between grains on the same node, among other things. Of course, immutable objects (such as strings) can be shared without copying. Oddly enough, serializing then deserializing an object is the <a href="https://stackoverflow.com/a/78612/635314">accepted Stack Overflow answer</a> to the question of “how can I deep copy an object?”. Let's see if we can fix that.</p>
+<h3 id="battle-plan">Battle Plan</h3>
+<p>The <code>Copy</code> method will recursively copy every field in the input object into a new instance of the same type. It must be able to deal with multiple references to the same object, so that if the user provides an object which contains a reference to itself then the result will also contain a reference to itself. That means we'll need to perform reference tracking. That's easy to do: we maintain a <code>Dictionary&lt;object, object&gt;</code> which maps from original object to copy object. Our main <code>Copy&lt;T&gt;(T orig)</code> method will call into a helper method with that dictionary as a parameter:</p>
+<pre><code class="language-C#">public static T Copy&lt;T&gt;(T original, CopyContext context)
+{
+  /* TODO: implementation */
+}
+</code></pre>
+<p>The copy routine is roughly as follows:</p>
+<ul>
+<li>If the input is null, return null.</li>
+<li>If the input has already been copied (or is currently being copied) return its copy.</li>
+<li>If the input is 'immutable', return the input.</li>
+<li>If the input is an array, copy each element into a new array and return it.</li>
+<li>Create a new instance of the input type and recursively copy each field from the input to the output and return it.</li>
+</ul>
+<p>Our definition of immutable is simple: the type is either a primitive or it's marked using a special <code>[Immutable]</code> attribute. More elaborate immutability could be probably be soundly implemented, so <a href="https://github.com/ReubenBond/DeepCopy/pull/new/master">submit a PR</a> if you've improved upon it.</p>
+<p>Everything but the last step in our routine is simple enough to do without generating code. The last step, recursively copying each field, can be performed using reflection to get and set field values. Reflection is a real performance killer on the hot path, though, and so we're going to go our own route using IL.</p>
+<h3 id="diving-into-the-code">Diving Into The Code</h3>
+<p>The main IL generation in <em>DeepCopy</em> occurs inside <a href="https://github.com/ReubenBond/DeepCopy/blob/1b00515b6b6aece93b4bea61bf40780265c2e349/src/DeepCopy/CopierGenerator.cs#L52"><code>CopierGenerator.cs</code></a> in the <code>CreateCopier&lt;T&gt;(Type type)</code> method. Let's walk through it:</p>
+<p>First we create a new <code>DynamicMethod</code> which will hold the IL code we emit. We have to tell <code>DynamicMethod</code> what the signature of the type we're creating is. In our case, it's a generic delegate type, <code>delegate T DeepCopyDelegate&lt;T&gt;(T original, CopyContext context)</code>. Then we get the <code>ILGenerator</code> for the method so that we can begin emitting IL code to it.</p>
+<pre><code class="language-C#">var dynamicMethod = new DynamicMethod(
+    type.Name + &quot;DeepCopier&quot;,
+    typeof(T), // The return type of the delegate
+    new[] {typeof(T), typeof(CopyContext)}, // The parameter types of the delegate.
+    typeof(CopierGenerator).Module,
+    true);
+
+var il = dynamicMethod.GetILGenerator(); 
+</code></pre>
+<p>The IL is going to be rather complicated because it needs to deal with immutable types and value types, but let's walk through it bit-by-bit.</p>
+<pre><code class="language-C#">// Declare a variable to store the result.
+il.DeclareLocal(type);
+</code></pre>
+<p>Next we need to initialize our new local variable to a new instance of the input type. There are 3 cases to consider, each corresponding to a block in the following code:</p>
+<ul>
+<li>The type is a value type (struct). Initialize it by essentially using a <code>default(T)</code> expression.</li>
+<li>The type has a parameterless constructor. Initialize it by calling <code>new T()</code>.</li>
+<li>The type does not have a parameterless constructor. In this case we ask the framework for help and we call <code>FormatterServices.GetUninitializedObject(type)</code>.</li>
+</ul>
+<pre><code class="language-C#">// Construct the result.
+var constructorInfo = type.GetConstructor(Type.EmptyTypes);
+if (type.IsValueType)
+{
+    // Value types can be initialized directly.
+    // C#: result = default(T);
+    il.Emit(OpCodes.Ldloca_S, (byte)0);
+    il.Emit(OpCodes.Initobj, type);
+}
+else if (constructorInfo != null)
+{
+    // If a default constructor exists, use that.
+    // C#: result = new T();
+    il.Emit(OpCodes.Newobj, constructorInfo);
+    il.Emit(OpCodes.Stloc_0);
+}
+else
+{
+    // If no default constructor exists, create an instance using GetUninitializedObject
+    // C#: result = (T)FormatterServices.GetUninitializedObject(type);
+    var field = this.fieldBuilder.GetOrCreateStaticField(type);
+    il.Emit(OpCodes.Ldsfld, field);
+    il.Emit(OpCodes.Call, this.methodInfos.GetUninitializedObject);
+    il.Emit(OpCodes.Castclass, type);
+    il.Emit(OpCodes.Stloc_0);
+}
+</code></pre>
+<h3 id="interlude-what-il-should-we-emit">Interlude - What IL Should We Emit?</h3>
+<p>Even if you're not a first-timer with IL, it's not always easy to work out what IL you need to emit to achieve the desired result. This is where tools come in to help you. Personally I typically write my code in C# first, slap it into <a href="https://www.linqpad.net/">LINQPad</a>, hit run and open the IL tab in the output. It's great for experimenting.</p>
+<p><img src="/images/linqpad-il.png" class="img-fluid" alt="LINQPad is seriously handy!" /></p>
+<p>Another option is to use a decompiler/disassembler like <a href="https://www.jetbrains.com/decompiler/">JetBrains' dotPeek</a>. You would compile your assembly and open it in dotPeek to reveal the IL.</p>
+<p>Finally, if you're like me, then <a href="https://www.jetbrains.com/resharper/">ReSharper</a> is indispensible. It's like coding on rails (train tracks, not Ruby). ReSharper comes with a convenient <a href="https://www.jetbrains.com/help/resharper/Viewing_Intermediate_Language.html">IL Viewer</a>.</p>
+<p><img src="/images/resharper-il.png" class="img-fluid" alt="ReSharper IL Viewer" /></p>
+<p>Alright, so that's how you work out what IL to generate. You'll occasionally want to <a href="https://msdn.microsoft.com/en-us/library/system.reflection.emit.opcodes(v=vs.110).aspx">visit the docs</a>, too.</p>
+<h3 id="back-to-emit">Back To Emit</h3>
+<p>Now we have a new instance of the input type stored in our local result variable. Before we do anything else, we must record the newly created reference. We push each argument onto the stack in order and use the non-virtual <code>Call</code> op-code to invoke <code>context.RecordObject(original, result)</code>. We can use the non-virtual <code>Call</code> op-code to call <code>CopyContext.RecordObject</code> because <code>CopyContext</code> is a <code>sealed</code> class. If it wasn't, we would use <code>Callvirt</code> instead.</p>
+<pre><code class="language-C#">// An instance of a value types can never appear multiple times in an object graph,
+// so only record reference types in the context.
+if (!type.IsValueType)
+{
+    // Record the object.
+    // C#: context.RecordObject(original, result);
+    il.Emit(OpCodes.Ldarg_1); // context
+    il.Emit(OpCodes.Ldarg_0); // original
+    il.Emit(OpCodes.Ldloc_0); // result, i.e, the copy of original
+    il.Emit(OpCodes.Call, this.methodInfos.RecordObject);
+}
+</code></pre>
+<p>On to the meat of our generator! With the accounting out of the way, we can enumerate over each field and generate code to copy each one into our <code>result</code> variable. The comments narrate the process:</p>
+<pre><code class="language-C#">// Copy each field.
+foreach (var field in this.copyPolicy.GetCopyableFields(type))
+{
+    // Load a reference to the result.
+    if (type.IsValueType)
+    {
+        // Value types need to be loaded by address rather than copied onto the stack.
+        il.Emit(OpCodes.Ldloca_S, (byte)0);
+    }
+    else
+    {
+        il.Emit(OpCodes.Ldloc_0);
+    }
+
+    // Load the field from the result.
+    il.Emit(OpCodes.Ldarg_0);
+    il.Emit(OpCodes.Ldfld, field);
+
+    // Deep-copy the field if needed, otherwise just leave it as-is.
+    if (!this.copyPolicy.IsShallowCopyable(field.FieldType))
+    {
+        // Copy the field using the generic Copy&lt;T&gt; method.
+        // C#: Copy&lt;T&gt;(field)
+        il.Emit(OpCodes.Ldarg_1);
+        il.Emit(OpCodes.Call, this.methodInfos.CopyInner.MakeGenericMethod(field.FieldType));
+    }
+
+    // Store the copy of the field on the result.
+    il.Emit(OpCodes.Stfld, field);
+}
+</code></pre>
+<p>Return the result and build our delegate using <code>CreateDelegate</code> so that we can start using it immediately.</p>
+<pre><code class="language-C#">// C#: return result;
+il.Emit(OpCodes.Ldloc_0);
+il.Emit(OpCodes.Ret);
+return dynamicMethod.CreateDelegate(typeof(DeepCopyDelegate&lt;T&gt;)) as DeepCopyDelegate&lt;T&gt;;
+</code></pre>
+<p>That's the guts of the library. Of course many details were left out, such as:</p>
+<ul>
+<li>Caching <code>Type</code> values in static fields so that we can reference them from our generated code. See <a href="https://github.com/ReubenBond/DeepCopy/blob/1b00515b6b6aece93b4bea61bf40780265c2e349/src/DeepCopy/StaticFieldBuilder.cs#L64"><code>StaticFieldBuilder.cs</code></a>.</li>
+<li>The special handling of arrays in <a href="https://github.com/ReubenBond/DeepCopy/blob/1b00515b6b6aece93b4bea61bf40780265c2e349/src/DeepCopy/DeepCopier.cs#L69"><code>DeepCopier.cs</code></a>.</li>
+<li>Optimizations such as using <a href="https://github.com/ReubenBond/DeepCopy/blob/master/src/DeepCopy/CachedReadConcurrentDictionary.cs"><code>CachedReadConcurrentDictionary&lt;TKey, TValue&gt;</code></a> for a slight improvement over <code>ConcurrentDictionary&lt;TKey, TValue&gt;</code> for workloads with a diminishing write volume.</li>
+</ul>
+
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+    var disqus_shortname = 'reublog'; // required: replace example with your forum shortname
+    var disqus_identifier = 'codegen-2-il-boogaloo';
+    var disqus_title = '.NET IL Generation - Writing DeepCopy';
+    var disqus_url = 'http://reubenbond.github.io/posts/codegen-2-il-boogaloo';
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+    
+    /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+    var disqus_shortname = 'reublog'; // required: replace example with your forum shortname
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+                                </div>
+                        </div>
+                </div>
+                                
+                <!-- Footer -->
+                <footer>
+                        <div class="container">
+        <div class="row">
+                <div class="col-md-12 text-center">
+                    <div>
+                        <a href="https://twitter.com/ReubenBond?ref_src=twsrc%5Etfw" class="twitter-follow-button" data-size="large" data-show-count="false">Follow @ReubenBond</a>
+                    </div>
+                    <p class="copyright text-muted">
+                        Copyright © 2017
+                        <br />
+                            <a href="/feed.rss"><i class="fa fa-rss"></i> RSS Feed</a>
+                        |
+                            <a href="/feed.atom"><i class="fa fa-rss"></i> Atom Feed</a>
+                        <br />
+                        <strong><a href="https://wyam.io">Generated by Wyam</a></strong>
+                    </p>
+                </div>
+        </div>
+</div>
+
+                </footer> 
+
+                
+                <script>hljs.initHighlightingOnLoad();</script>
+
+
+                <script>
+                        BackgroundCheck.init({
+                                targets: '.intro-header,.navbar',
+                                images: '.intro-header'
+                        });
+                </script>
+
+                <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+                <!-- Global site tag (gtag.js) - Google Analytics -->
+                <script async src="https://www.googletagmanager.com/gtag/js?id=UA-77999682-2"></script>
+                <script>
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+
+                gtag('config', 'UA-77999682-2');
+                </script>
+        </body>
+</html>
+
