@@ -165,6 +165,7 @@ Published on Wednesday, November 1, 2017<br>    </div>
 <p>The two phases can be merged for simple code generators. Orleans uses two phases. In phase 1, the input assembly is scanned and metadata is collected for types matching various criteria: Grain classes, Grain interfaces, serializable types, and custom serializer registrations. In phase 2, support classes are generated. For example, each grain interface has two classes generated: an RPC proxy and an RPC stub.</p>
 <h2 id="conclusion">Conclusion</h2>
 <p>That's enough for now. Maybe next time we'll take a look at writing that hypothetical deep cloning library using IL generation. After that, we can take a look at a serialization library I've been working on which uses Roslyn for both metadata collection and syntax generation. If either of those things are interesting to you, let me know here or on <a href="https://twitter.com/reubenbond">Twitter</a>.</p>
+<p><a href="/posts/codegen-2-il-boogaloo"><strong>Next Post: .NET IL Generation - Writing DeepCopy</strong></a></p>
 
 
 <div id="disqus_thread"></div>

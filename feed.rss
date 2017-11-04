@@ -5,8 +5,8 @@
 		<link>http://reubenbond.github.io/</link>
 		<description>reublog</description>
 		<copyright>2017</copyright>
-		<pubDate>Sat, 04 Nov 2017 05:57:08 GMT</pubDate>
-		<lastBuildDate>Sat, 04 Nov 2017 05:57:08 GMT</lastBuildDate>
+		<pubDate>Sat, 04 Nov 2017 06:36:42 GMT</pubDate>
+		<lastBuildDate>Sat, 04 Nov 2017 06:36:42 GMT</lastBuildDate>
 		<item>
 			<title>.NET IL Generation - Writing DeepCopy</title>
 			<link>http://reubenbond.github.io/posts/codegen-2-il-boogaloo</link>
@@ -215,6 +215,7 @@ return dynamicMethod.CreateDelegate(typeof(DeepCopyDelegate&amp;lt;T&amp;gt;)) a
 &lt;p&gt;The two phases can be merged for simple code generators. Orleans uses two phases. In phase 1, the input assembly is scanned and metadata is collected for types matching various criteria: Grain classes, Grain interfaces, serializable types, and custom serializer registrations. In phase 2, support classes are generated. For example, each grain interface has two classes generated: an RPC proxy and an RPC stub.&lt;/p&gt;
 &lt;h2 id="conclusion"&gt;Conclusion&lt;/h2&gt;
 &lt;p&gt;That's enough for now. Maybe next time we'll take a look at writing that hypothetical deep cloning library using IL generation. After that, we can take a look at a serialization library I've been working on which uses Roslyn for both metadata collection and syntax generation. If either of those things are interesting to you, let me know here or on &lt;a href="https://twitter.com/reubenbond"&gt;Twitter&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href="/posts/codegen-2-il-boogaloo"&gt;&lt;strong&gt;Next Post: .NET IL Generation - Writing DeepCopy&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
 </content:encoded>
 		</item>
 		<item>
