@@ -4,7 +4,7 @@
 	<id>http://reubenbond.github.io/</id>
 	<title>reublog</title>
 	<rights>2017</rights>
-	<updated>2017-11-04T05:40:04Z</updated>
+	<updated>2017-11-04T05:45:20Z</updated>
 	<logo>http://reubenbond.github.io/images/header.jpg</logo>
 	<subtitle>reublog</subtitle>
 	<entry>
@@ -21,7 +21,7 @@
 &lt;p&gt;Today we're going to implement the guts of a library for creating deep copies of objects. Essentially it provides one method:&lt;/p&gt;
 &lt;pre&gt;&lt;code class="language-C#"&gt;public static T Copy&amp;lt;T&amp;gt;(T original);
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Our library will be called &lt;em&gt;DeepCopy&lt;/em&gt; and the source is up on GitHub at &lt;a href="https://github.com/ReubenBond/DeepCopy"&gt;ReubenBond/DeepCopy&lt;/a&gt; feel free to mess about with it.&lt;/p&gt;
+&lt;p&gt;Our library will be called &lt;em&gt;DeepCopy&lt;/em&gt; and the source is up on GitHub at &lt;a href="https://github.com/ReubenBond/DeepCopy"&gt;ReubenBond/DeepCopy&lt;/a&gt; feel free to mess about with it. The majority of the code was adapted from the &lt;a href="https://github.com/dotnet/orleans"&gt;Orleans&lt;/a&gt; codebase.&lt;/p&gt;
 &lt;p&gt;Deep copying is important for frameworks such as &lt;a href="https://github.com/dotnet/orleans"&gt;Orleans&lt;/a&gt;, since it allows us to safely send mutable objects between grains on the same node without having to first serialize &amp;amp; then deserialze them, among other things. Of course, immutable objects (such as strings) are shared without copying. Oddly enough, serializing then deserializing an object is the &lt;a href="https://stackoverflow.com/a/78612/635314"&gt;accepted Stack Overflow answer&lt;/a&gt; to the question of “how can I deep copy an object?”.&lt;/p&gt;
 &lt;p&gt;Let's see if we can fix that.&lt;/p&gt;
 &lt;h3 id="battle-plan"&gt;Battle Plan&lt;/h3&gt;

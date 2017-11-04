@@ -124,7 +124,7 @@ Published on Saturday, November 4, 2017<br>    </div>
 <p>Today we're going to implement the guts of a library for creating deep copies of objects. Essentially it provides one method:</p>
 <pre><code class="language-C#">public static T Copy&lt;T&gt;(T original);
 </code></pre>
-<p>Our library will be called <em>DeepCopy</em> and the source is up on GitHub at <a href="https://github.com/ReubenBond/DeepCopy">ReubenBond/DeepCopy</a> feel free to mess about with it.</p>
+<p>Our library will be called <em>DeepCopy</em> and the source is up on GitHub at <a href="https://github.com/ReubenBond/DeepCopy">ReubenBond/DeepCopy</a> feel free to mess about with it. The majority of the code was adapted from the <a href="https://github.com/dotnet/orleans">Orleans</a> codebase.</p>
 <p>Deep copying is important for frameworks such as <a href="https://github.com/dotnet/orleans">Orleans</a>, since it allows us to safely send mutable objects between grains on the same node without having to first serialize &amp; then deserialze them, among other things. Of course, immutable objects (such as strings) are shared without copying. Oddly enough, serializing then deserializing an object is the <a href="https://stackoverflow.com/a/78612/635314">accepted Stack Overflow answer</a> to the question of “how can I deep copy an object?”.</p>
 <p>Let's see if we can fix that.</p>
 <h3 id="battle-plan">Battle Plan</h3>
