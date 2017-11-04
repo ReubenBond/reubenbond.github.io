@@ -4,22 +4,26 @@
 	<id>http://reubenbond.github.io/</id>
 	<title>reublog</title>
 	<rights>2017</rights>
-	<updated>2017-11-04T05:12:04Z</updated>
+	<updated>2017-11-04T05:37:32Z</updated>
 	<logo>http://reubenbond.github.io/images/header.jpg</logo>
 	<subtitle>reublog</subtitle>
 	<entry>
 		<link href="http://reubenbond.github.io/posts/codegen-2-il-boogaloo" />
-		<link rel="enclosure" type="image" href="http://reubenbond.github.io/images/codegen-1-banner.png" />
+		<link rel="enclosure" type="image" href="http://reubenbond.github.io/images/codegen-2-banner.png" />
 		<id>http://reubenbond.github.io/posts/codegen-2-il-boogaloo</id>
 		<title>.NET IL Generation - Writing DeepCopy</title>
-		<updated>2017-11-03T00:00:00Z</updated>
+		<updated>2017-11-04T00:00:00Z</updated>
 		<content>&lt;p&gt;&lt;em&gt;This is the second part in a series of short posts covering code generation on the .NET platform.&lt;/em&gt;&lt;/p&gt;
-&lt;p&gt;Last time on reublog we skimmed over some methods to generate code on .NET and one of them was emitting CLR assembly language, known as Common Intermediate Language, or IL for short. IL Generation is an extremely useful technique since it lets us circumvent the rules C# and other languages put in place to protect us from our own stupidity. Without those rules, we can implement all kinds of fancy foot guns. Rules like “don't access private members of types you don't know” and “don't modify &lt;code&gt;readonly&lt;/code&gt; fields”. The last one there is interesting: C#'s &lt;code&gt;readonly&lt;/code&gt; translates into &lt;code&gt;initonly&lt;/code&gt; on the IL/metadata level so theoretically we shouldn't be able to modify those fields even using IL. As a matter of fact we can, but it comes at a cost: our IL will no longer be verifiable. That means that certain tools will bark at you if you try to write IL code which commits this sin, tools such as &lt;a href="https://docs.microsoft.com/en-us/dotnet/framework/tools/peverify-exe-peverify-tool"&gt;PEVerify&lt;/a&gt; and &lt;a href="https://github.com/dotnet/corert/tree/master/src/ILVerify"&gt;ILVerify&lt;/a&gt;. Verifiable code also has ramifications for &lt;a href="https://docs.microsoft.com/en-us/dotnet/framework/misc/security-transparent-code"&gt;Security-Transparent Code&lt;/a&gt;. Thankfully for us, Code Access Security and Security Transparent Code &lt;a href="https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/porting.md#code-access-security-cas"&gt;don't exist in .NET Core&lt;/a&gt; and they usually don't cause issue for .NET Framework.&lt;/p&gt;
+&lt;h3 id="il-generation"&gt;IL Generation&lt;/h3&gt;
+&lt;p&gt;&lt;a href="/posts/codegen-1"&gt;Last time&lt;/a&gt;, we skimmed over some methods to generate code on .NET and one of them was emitting IL. IL generation lets us circumvent the rules C# and other languages put in place to protect us from our own stupidity. Without those rules, we can implement all kinds of fancy foot guns. Rules like “don't access private members of foreign types” and “don't modify &lt;code&gt;readonly&lt;/code&gt; fields”. That last one is interesting: C#'s &lt;code&gt;readonly&lt;/code&gt; translates into &lt;code&gt;initonly&lt;/code&gt; on the IL/metadata level so theoretically we shouldn't be able to modify those fields even using IL. As a matter of fact we can, but it comes at a cost: &lt;strong&gt;our IL will no longer be verifiable&lt;/strong&gt;. That means that certain tools will bark at you if you try to write IL code which commits this sin, tools such as &lt;a href="https://docs.microsoft.com/en-us/dotnet/framework/tools/peverify-exe-peverify-tool"&gt;PEVerify&lt;/a&gt; and &lt;a href="https://github.com/dotnet/corert/tree/master/src/ILVerify"&gt;ILVerify&lt;/a&gt;. Verifiable code also has ramifications for &lt;a href="https://docs.microsoft.com/en-us/dotnet/framework/misc/security-transparent-code"&gt;Security-Transparent Code&lt;/a&gt;. Thankfully for us, Code Access Security and Security Transparent Code &lt;a href="https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/porting.md#code-access-security-cas"&gt;don't exist in .NET Core&lt;/a&gt; and they usually don't cause issue for .NET Framework.&lt;/p&gt;
+&lt;p&gt;Enough stalling, onto our mission briefing.&lt;/p&gt;
+&lt;h3 id="deepcopy"&gt;DeepCopy&lt;/h3&gt;
 &lt;p&gt;Today we're going to implement the guts of a library for creating deep copies of objects. Essentially it provides one method:&lt;/p&gt;
 &lt;pre&gt;&lt;code class="language-C#"&gt;public static T Copy&amp;lt;T&amp;gt;(T original);
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;Our library will be called &lt;em&gt;DeepCopy&lt;/em&gt; and the source is up on GitHub at &lt;a href="https://github.com/ReubenBond/DeepCopy"&gt;ReubenBond/DeepCopy&lt;/a&gt; feel free to mess about with it.&lt;/p&gt;
-&lt;p&gt;Deep copying is important for frameworks such as &lt;a href="https://github.com/dotnet/orleans"&gt;Orleans&lt;/a&gt;, since it allows us to avoid serializing &amp;amp; deserialzing objects sent between grains on the same node, among other things. Of course, immutable objects (such as strings) can be shared without copying. Oddly enough, serializing then deserializing an object is the &lt;a href="https://stackoverflow.com/a/78612/635314"&gt;accepted Stack Overflow answer&lt;/a&gt; to the question of “how can I deep copy an object?”. Let's see if we can fix that.&lt;/p&gt;
+&lt;p&gt;Deep copying is important for frameworks such as &lt;a href="https://github.com/dotnet/orleans"&gt;Orleans&lt;/a&gt;, since it allows us to safely send mutable objects between grains on the same node without having to first serialize &amp;amp; then deserialze them, among other things. Of course, immutable objects (such as strings) are shared without copying. Oddly enough, serializing then deserializing an object is the &lt;a href="https://stackoverflow.com/a/78612/635314"&gt;accepted Stack Overflow answer&lt;/a&gt; to the question of “how can I deep copy an object?”.&lt;/p&gt;
+&lt;p&gt;Let's see if we can fix that.&lt;/p&gt;
 &lt;h3 id="battle-plan"&gt;Battle Plan&lt;/h3&gt;
 &lt;p&gt;The &lt;code&gt;Copy&lt;/code&gt; method will recursively copy every field in the input object into a new instance of the same type. It must be able to deal with multiple references to the same object, so that if the user provides an object which contains a reference to itself then the result will also contain a reference to itself. That means we'll need to perform reference tracking. That's easy to do: we maintain a &lt;code&gt;Dictionary&amp;lt;object, object&amp;gt;&lt;/code&gt; which maps from original object to copy object. Our main &lt;code&gt;Copy&amp;lt;T&amp;gt;(T orig)&lt;/code&gt; method will call into a helper method with that dictionary as a parameter:&lt;/p&gt;
 &lt;pre&gt;&lt;code class="language-C#"&gt;public static T Copy&amp;lt;T&amp;gt;(T original, CopyContext context)
@@ -29,8 +33,8 @@
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;The copy routine is roughly as follows:&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;If the input is null, return null.&lt;/li&gt;
-&lt;li&gt;If the input has already been copied (or is currently being copied) return its copy.&lt;/li&gt;
+&lt;li&gt;If the input is &lt;code&gt;null&lt;/code&gt;, return &lt;code&gt;null&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;If the input has already been copied (or is currently being copied), return its copy.&lt;/li&gt;
 &lt;li&gt;If the input is 'immutable', return the input.&lt;/li&gt;
 &lt;li&gt;If the input is an array, copy each element into a new array and return it.&lt;/li&gt;
 &lt;li&gt;Create a new instance of the input type and recursively copy each field from the input to the output and return it.&lt;/li&gt;

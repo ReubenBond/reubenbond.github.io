@@ -29,10 +29,10 @@
         <meta name="msapplication-starturl" content="/" />
 
         <meta property="og:title" content=".NET IL Generation - Writing DeepCopy" />
-        <meta property="og:image" content="http://reubenbond.github.io/images/codegen-1-banner.png" />
+        <meta property="og:image" content="http://reubenbond.github.io/images/codegen-2-banner.png" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="http://reubenbond.github.io/posts/codegen-2-il-boogaloo" />
-        <meta property="article:published_time" content="2017-11-03T00:00:00.0000000" />
+        <meta property="article:published_time" content="2017-11-04T00:00:00.0000000" />
                 <meta property="article:tag" content="CodeGen" />
         <meta property="article:tag" content="IL" />
 
@@ -89,7 +89,7 @@
                 </nav>
                 
                 <!-- Page Header -->
-                <header class="intro-header" id="intro-header" style="background-image: url(&quot;/images/codegen-1-banner.png&quot;)">
+                <header class="intro-header" id="intro-header" style="background-image: url(&quot;/images/codegen-2-banner.png&quot;)">
                         <div class="container">
                                 <div class="row">
                                         <div class="col-md-12">
@@ -97,9 +97,9 @@
     
 <div class="post-heading">
     <h1>.NET IL Generation - Writing DeepCopy</h1>
-        <h2 class="subheading">A brief overview of code generation APIs in .NET</h2>
+        <h2 class="subheading">Implementing a powerful object cloning library using IL generation.</h2>
     <div class="meta">        
-Published on Friday, November 3, 2017<br>    </div>
+Published on Saturday, November 4, 2017<br>    </div>
         <div class="tags">
                     <a role="button" href="/tags/CodeGen" class="btn btn-default btn-xs">CodeGen</a>
                     <a role="button" href="/tags/IL" class="btn btn-default btn-xs">IL</a>
@@ -117,12 +117,16 @@ Published on Friday, November 3, 2017<br>    </div>
                                         
 
 <p><em>This is the second part in a series of short posts covering code generation on the .NET platform.</em></p>
-<p>Last time on reublog we skimmed over some methods to generate code on .NET and one of them was emitting CLR assembly language, known as Common Intermediate Language, or IL for short. IL Generation is an extremely useful technique since it lets us circumvent the rules C# and other languages put in place to protect us from our own stupidity. Without those rules, we can implement all kinds of fancy foot guns. Rules like “don't access private members of types you don't know” and “don't modify <code>readonly</code> fields”. The last one there is interesting: C#'s <code>readonly</code> translates into <code>initonly</code> on the IL/metadata level so theoretically we shouldn't be able to modify those fields even using IL. As a matter of fact we can, but it comes at a cost: our IL will no longer be verifiable. That means that certain tools will bark at you if you try to write IL code which commits this sin, tools such as <a href="https://docs.microsoft.com/en-us/dotnet/framework/tools/peverify-exe-peverify-tool">PEVerify</a> and <a href="https://github.com/dotnet/corert/tree/master/src/ILVerify">ILVerify</a>. Verifiable code also has ramifications for <a href="https://docs.microsoft.com/en-us/dotnet/framework/misc/security-transparent-code">Security-Transparent Code</a>. Thankfully for us, Code Access Security and Security Transparent Code <a href="https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/porting.md#code-access-security-cas">don't exist in .NET Core</a> and they usually don't cause issue for .NET Framework.</p>
+<h3 id="il-generation">IL Generation</h3>
+<p><a href="/posts/codegen-1">Last time</a>, we skimmed over some methods to generate code on .NET and one of them was emitting IL. IL generation lets us circumvent the rules C# and other languages put in place to protect us from our own stupidity. Without those rules, we can implement all kinds of fancy foot guns. Rules like “don't access private members of foreign types” and “don't modify <code>readonly</code> fields”. That last one is interesting: C#'s <code>readonly</code> translates into <code>initonly</code> on the IL/metadata level so theoretically we shouldn't be able to modify those fields even using IL. As a matter of fact we can, but it comes at a cost: <strong>our IL will no longer be verifiable</strong>. That means that certain tools will bark at you if you try to write IL code which commits this sin, tools such as <a href="https://docs.microsoft.com/en-us/dotnet/framework/tools/peverify-exe-peverify-tool">PEVerify</a> and <a href="https://github.com/dotnet/corert/tree/master/src/ILVerify">ILVerify</a>. Verifiable code also has ramifications for <a href="https://docs.microsoft.com/en-us/dotnet/framework/misc/security-transparent-code">Security-Transparent Code</a>. Thankfully for us, Code Access Security and Security Transparent Code <a href="https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/porting.md#code-access-security-cas">don't exist in .NET Core</a> and they usually don't cause issue for .NET Framework.</p>
+<p>Enough stalling, onto our mission briefing.</p>
+<h3 id="deepcopy">DeepCopy</h3>
 <p>Today we're going to implement the guts of a library for creating deep copies of objects. Essentially it provides one method:</p>
 <pre><code class="language-C#">public static T Copy&lt;T&gt;(T original);
 </code></pre>
 <p>Our library will be called <em>DeepCopy</em> and the source is up on GitHub at <a href="https://github.com/ReubenBond/DeepCopy">ReubenBond/DeepCopy</a> feel free to mess about with it.</p>
-<p>Deep copying is important for frameworks such as <a href="https://github.com/dotnet/orleans">Orleans</a>, since it allows us to avoid serializing &amp; deserialzing objects sent between grains on the same node, among other things. Of course, immutable objects (such as strings) can be shared without copying. Oddly enough, serializing then deserializing an object is the <a href="https://stackoverflow.com/a/78612/635314">accepted Stack Overflow answer</a> to the question of “how can I deep copy an object?”. Let's see if we can fix that.</p>
+<p>Deep copying is important for frameworks such as <a href="https://github.com/dotnet/orleans">Orleans</a>, since it allows us to safely send mutable objects between grains on the same node without having to first serialize &amp; then deserialze them, among other things. Of course, immutable objects (such as strings) are shared without copying. Oddly enough, serializing then deserializing an object is the <a href="https://stackoverflow.com/a/78612/635314">accepted Stack Overflow answer</a> to the question of “how can I deep copy an object?”.</p>
+<p>Let's see if we can fix that.</p>
 <h3 id="battle-plan">Battle Plan</h3>
 <p>The <code>Copy</code> method will recursively copy every field in the input object into a new instance of the same type. It must be able to deal with multiple references to the same object, so that if the user provides an object which contains a reference to itself then the result will also contain a reference to itself. That means we'll need to perform reference tracking. That's easy to do: we maintain a <code>Dictionary&lt;object, object&gt;</code> which maps from original object to copy object. Our main <code>Copy&lt;T&gt;(T orig)</code> method will call into a helper method with that dictionary as a parameter:</p>
 <pre><code class="language-C#">public static T Copy&lt;T&gt;(T original, CopyContext context)
@@ -132,8 +136,8 @@ Published on Friday, November 3, 2017<br>    </div>
 </code></pre>
 <p>The copy routine is roughly as follows:</p>
 <ul>
-<li>If the input is null, return null.</li>
-<li>If the input has already been copied (or is currently being copied) return its copy.</li>
+<li>If the input is <code>null</code>, return <code>null</code>.</li>
+<li>If the input has already been copied (or is currently being copied), return its copy.</li>
 <li>If the input is 'immutable', return the input.</li>
 <li>If the input is an array, copy each element into a new array and return it.</li>
 <li>Create a new instance of the input type and recursively copy each field from the input to the output and return it.</li>

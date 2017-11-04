@@ -1,6 +1,9 @@
 #intro-header {
   background-color: #555555;
 }
+.intro-header {
+  margin-bottom: 10px;
+}
 .intro-header .site-heading .subheading {
   line-height: 1.6;
 }
