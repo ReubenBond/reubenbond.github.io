@@ -5,8 +5,8 @@
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
 
-        <title>reublog - CodeGen</title>
-        <meta name="description" content="reublog" />
+        <title>reublog - Transactions</title>
+        <meta name="description" content="xxx" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0">        
 
         <link type="application/rss+xml" rel="alternate" title="reublog" href="/feed.rss" />
@@ -25,15 +25,19 @@
 
 
         <meta name="application-name" content="reublog" />
-        <meta name="msapplication-tooltip" content="reublog - CodeGen" />
+        <meta name="msapplication-tooltip" content="reublog - Transactions" />
         <meta name="msapplication-starturl" content="/" />
 
-        <meta property="og:title" content="CodeGen" />
-        <meta property="og:image" content="http://reubenbond.github.io/images/header.jpg" />
+        <meta property="og:title" content="Transactions" />
+        <meta property="og:image" content="http://reubenbond.github.io/images/codegen-1-banner.png" />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="http://reubenbond.github.io/tags/CodeGen" />
-        <meta property="og:description" content="reublog" />
-        
+        <meta property="og:url" content="http://reubenbond.github.io/drafts/transactions" />
+        <meta property="og:description" content="xxx" />
+        <meta property="article:published_time" content="2017-11-01T00:00:00.0000000" />
+                <meta property="article:tag" content="CASPaxos" />
+        <meta property="article:tag" content="Distributed Consensus" />
+        <meta property="article:tag" content="Orleans" />
+
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:site" content="@ReubenBond" />
 
@@ -90,12 +94,12 @@
                 </nav>
                 
                 <!-- Page Header -->
-                <header class="intro-header" id="intro-header" style="background-image: url(&quot;/images/header.jpg&quot;)">
+                <header class="intro-header" id="intro-header" style="background-image: url(&quot;/images/codegen-1-banner.png&quot;)">
                         <div class="container">
                                 <div class="row">
                                         <div class="col-md-12">
 <div class="site-heading">
-    <h1>CodeGen</h1>
+    <h1>Transactions</h1>
 </div>                                            </div>
                                 </div>
                         </div>
@@ -105,45 +109,20 @@
                 <div class="container">
                         <div class="row">
                                 <div id="content" class="col-md-12">
-                                        <div class="container-sm-height">
-    <div class="row row-sm-height">
-        <div class="col-sm-8 right-border col-sm-height">
-                    <div class="post-list">
-            <a href="/posts/codegen-2-il-boogaloo">
-                <h3 class="post-title">.NET IL Generation - Writing DeepCopy</h3>
-                    <h4 class="post-subtitle">Implementing a powerful object cloning library using IL generation.</h4>
-            </a>
-            <p class="post-meta">Posted on Saturday, November 4, 2017</p>      
-<p><em>This is the second part in a series of short posts covering code generation on the .NET platform.</em></p>        </div>   
-        <div class="post-list">
-            <a href="/posts/codegen-1">
-                <h3 class="post-title">Code Generation on .NET</h3>
-                    <h4 class="post-subtitle">A brief overview of code generation APIs in .NET</h4>
-            </a>
-            <p class="post-meta">Posted on Wednesday, November 1, 2017</p>      
-<p><em>This is the first part in what's hopefully a series of short posts covering code generation on the .NET platform.</em></p>        </div>   
+                                        <p>The less concepts that a developer needs to keep in their head, the better. That is one reason why transactions are popular in SQL databases: they <em>greatly</em> reduce the complexity of maintaining business rules. Google's engineers said this about Transactions when designing their Spanner DB:</p>
+<blockquote class="blockquote">
+<p>We believe it is better to have application programmers deal with performance problems due to overuse of transactions as bottlenecks arise, rather than always coding around the lack of transactions. - <em><a href="https://static.googleusercontent.com/media/research.google.com/en//archive/spanner-osdi2012.pdf">Spanner: Google’s Globally-Distributed Database</a></em></p>
+</blockquote>
+<p>Transactions, particularly distributed transactions, have a reputation for being slow or otherwise costly. This is a myth pedalled by the joint Big NoSQL &amp; Big Microservices lobby groups. It is usually an excuse used to explain the lack of transactions in a product in lieu of a principaled reason. The truth is, achieving real ACID semantics in a distributed system requires careful design and attention to detail<sup>1</sup>. Martin Kleppman made this observation regarding the lack of transactions in microservices:</p>
+<blockquote class="blockquote">
+<p>Every sufficiently large deployment of microservices contains an ad-hoc, informally-specified, bug-ridden, slow implementation of half of transactions. - <em><a href="https://www.youtube.com/watch?v=5ZjhNTM8XU8">Transactions: myths, surprises and opportunities by Martin Kleppmann</a></em></p>
+</blockquote>
+<p>Avoiding transactions comes with increased cost of writing error-free code in terms of development time, execution time, and time spent figuring out how the hell n00bslayya47 has managed to item dupe their entire inventory and sell it on eBay, <a href="https://motherboard.vice.com/en_us/article/59p7qd/this-man-has-survived-by-hacking-mmo-online-games">putting themselves through college</a>. Transactions make your life easier and they're cheaper than the alternative (ad-hoc transactions, compensating transactions). Take advantage of them whenever they're available.</p>
+<h1 id="footnotes">Footnotes:</h1>
+<ul>
+<li><sup>1</sup> Careful design is especially required when implementing Serializable Isolation, which is the only ANSI isolation level which guarantees zero data anomalies. For background on isolation levels, read <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr-95-51.pdf">A Critique of ANSI SQL Isolation Levels</a>.</li>
+</ul>
 
-
-            <nav>
-                <ul class="pager">
-                    <li class="previous">                
-                    </li>
-                    <li class="next">
-                    </li>
-                </ul>
-            </nav>
-            <hr class="visible-xs-block" />
-        </div>
-		
-        <div class="col-sm-4 col-sm-height">
-                <a role="button" href="/tags/CodeGen" class="btn btn-primary btn-xs">CodeGen (2)</a>
-                <a role="button" href="/tags/IL" class="btn btn-default btn-xs">IL (1)</a>
-                <a role="button" href="/tags/Wyam" class="btn btn-default btn-xs">Wyam (1)</a>
-                <a role="button" href="/tags/Visual-Studio-Online" class="btn btn-default btn-xs">Visual Studio Online (1)</a>
-                <a role="button" href="/tags/Blog" class="btn btn-default btn-xs">Blog (1)</a>
-        </div>
-    </div>
-</div>
                                 </div>
                         </div>
                 </div>
