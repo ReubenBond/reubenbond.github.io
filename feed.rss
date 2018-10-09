@@ -5,8 +5,8 @@
 		<link>http://reubenbond.github.io/</link>
 		<description>reublog</description>
 		<copyright>2018</copyright>
-		<pubDate>Sun, 18 Mar 2018 23:21:48 GMT</pubDate>
-		<lastBuildDate>Sun, 18 Mar 2018 23:21:48 GMT</lastBuildDate>
+		<pubDate>Tue, 09 Oct 2018 01:41:41 GMT</pubDate>
+		<lastBuildDate>Tue, 09 Oct 2018 01:41:41 GMT</lastBuildDate>
 		<item>
 			<title>.NET IL Generation - Writing DeepCopy</title>
 			<link>http://reubenbond.github.io/posts/codegen-2-il-boogaloo</link>
@@ -220,11 +220,11 @@ return dynamicMethod.CreateDelegate(typeof(DeepCopyDelegate&amp;lt;T&amp;gt;)) a
 		</item>
 		<item>
 			<title>Deploying Wyam To GitHub Using Visual Studio Online</title>
-			<link>http://reubenbond.github.io/posts/2017-Oct-30-setting-up-wyam</link>
+			<link>http://reubenbond.github.io/posts/-setting-up-wyam</link>
 			<description>&lt;p&gt;Here goes nothing! This blog is built with &lt;a href="https://twitter.com/daveaglick"&gt;Dave Glick's&lt;/a&gt; &lt;a href="https://wyam.io/"&gt;Wyam&lt;/a&gt; static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages. Here's how to set up something similar.&lt;/p&gt;</description>
 			<enclosure url="http://reubenbond.github.io/images/header.jpg" length="0" type="image" />
-			<guid>http://reubenbond.github.io/posts/2017-Oct-30-setting-up-wyam</guid>
-			<pubDate>Mon, 30 Oct 2017 00:00:00 GMT</pubDate>
+			<guid>http://reubenbond.github.io/posts/-setting-up-wyam</guid>
+			<pubDate>Tue, 03 Oct 2017 00:00:00 GMT</pubDate>
 			<content:encoded>&lt;p&gt;Here goes nothing! This blog is built with &lt;a href="https://twitter.com/daveaglick"&gt;Dave Glick's&lt;/a&gt; &lt;a href="https://wyam.io/"&gt;Wyam&lt;/a&gt; static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages. Here's how to set up something similar.&lt;/p&gt;
 &lt;h1 id="prerequisites"&gt;Prerequisites&lt;/h1&gt;
 &lt;ul&gt;

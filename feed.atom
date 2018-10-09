@@ -4,7 +4,7 @@
 	<id>http://reubenbond.github.io/</id>
 	<title>reublog</title>
 	<rights>2018</rights>
-	<updated>2018-03-18T23:21:48Z</updated>
+	<updated>2018-10-09T01:41:41Z</updated>
 	<logo>http://reubenbond.github.io/images/header.jpg</logo>
 	<subtitle>reublog</subtitle>
 	<entry>
@@ -219,11 +219,11 @@ return dynamicMethod.CreateDelegate(typeof(DeepCopyDelegate&amp;lt;T&amp;gt;)) a
 		<summary>&lt;p&gt;&lt;em&gt;This is the first part in what's hopefully a series of short posts covering code generation on the .NET platform.&lt;/em&gt;&lt;/p&gt;</summary>
 	</entry>
 	<entry>
-		<link href="http://reubenbond.github.io/posts/2017-Oct-30-setting-up-wyam" />
+		<link href="http://reubenbond.github.io/posts/-setting-up-wyam" />
 		<link rel="enclosure" type="image" href="http://reubenbond.github.io/images/header.jpg" />
-		<id>http://reubenbond.github.io/posts/2017-Oct-30-setting-up-wyam</id>
+		<id>http://reubenbond.github.io/posts/-setting-up-wyam</id>
 		<title>Deploying Wyam To GitHub Using Visual Studio Online</title>
-		<updated>2017-10-30T00:00:00Z</updated>
+		<updated>2017-10-03T00:00:00Z</updated>
 		<content>&lt;p&gt;Here goes nothing! This blog is built with &lt;a href="https://twitter.com/daveaglick"&gt;Dave Glick's&lt;/a&gt; &lt;a href="https://wyam.io/"&gt;Wyam&lt;/a&gt; static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages. Here's how to set up something similar.&lt;/p&gt;
 &lt;h1 id="prerequisites"&gt;Prerequisites&lt;/h1&gt;
 &lt;ul&gt;
