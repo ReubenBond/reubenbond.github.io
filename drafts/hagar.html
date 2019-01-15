@@ -5,7 +5,7 @@
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
 
-        <title>reublog - A Reliable Serializer for .NET</title>
+        <title>reublog - Hagar</title>
         <meta name="description" content="reublog" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0">        
 
@@ -28,9 +28,9 @@
         <meta name="msapplication-tooltip" content="reublog" />
         <meta name="msapplication-starturl" content="/" />
 
-        <meta property="og:title" content="reublog - A Reliable Serializer for .NET" />
+        <meta property="og:title" content="reublog - Hagar" />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="http://reubenbond.github.io/drafts/2017-Oct-31-version-tolerant-serializer" />
+        <meta property="og:url" content="http://reubenbond.github.io/drafts/hagar" />
         <!-- TODO: More social graph meta tags -->
 
         <script src="/assets/js/jquery.min.js"></script>
@@ -88,7 +88,7 @@
                                 <div class="row">
                                         <div class="col-md-12">
 <div class="site-heading">
-    <h1>A Reliable Serializer for .NET</h1>
+    <h1>Hagar</h1>
 </div>                                            </div>
                                 </div>
                         </div>
@@ -98,7 +98,7 @@
                 <div class="container">
                         <div class="row">
                                 <div id="content" class="col-md-12">
-                                        <p>Orleans allows developers to send arbitrary, complex objects between remote processes with little or no prior knowledge of what those object might be. This flexibility &amp; ease-of-use has been key to the success of Orleans, and it's certainly one of our strengths. Ideally, we want to stay out of the way of developers and let them be free to model their applications as they see fit.</p>
+                                        <p><a href="https://github.com/dotnet/orleans/">Orleans</a> lets developers to send arbitrary, complex objects between remote processes with little or no prior knowledge of what those object might be. This flexibility &amp; ease-of-use has been key to the success of Orleans, and it's certainly one of its strengths. Ideally, we want to stay out of the way of developers and let them be free to model their applications as they see fit.</p>
 <p>Developers build applications with lifetimes ranging in the years and over that time these applications need to evolve. This often means evolving the kinds of objects which are sent between processes or stored and retrieved. One of Orleans' weaknesses is its currently poor support for this kind of evolution. Recently, we've implemented version tolerance for communication interfaces, but we still do not support evolution for object schemas.</p>
 <p>Existing serialization libraries which support version tolerance tend to restrict how data is modelled, usually by providing a very restricted type system which supports few of the features found in common type systems, features such as:</p>
 <ul>

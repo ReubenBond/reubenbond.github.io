@@ -28,14 +28,10 @@
         <meta name="msapplication-tooltip" content="reublog" />
         <meta name="msapplication-starturl" content="/" />
 
-        <meta property="og:title" content="" />
-        <meta property="og:image" content="http://reubenbond.github.io/images/header.jpg" />
+        <meta property="og:title" content="reublog" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="http://reubenbond.github.io/" />
-        <meta property="og:description" content="reublog" />
-        
-        <meta name="twitter:card" content="summary" />
-        <meta name="twitter:site" content="@ReubenBond" />
+        <!-- TODO: More social graph meta tags -->
 
         <script src="/assets/js/jquery.min.js"></script>
         <script src="/assets/js/bootstrap.min.js"></script>     
@@ -76,9 +72,9 @@
                                 <!-- Collect the nav links, forms, and other content for toggling -->
                                 <div class="collapse navbar-collapse" id="navbar-collapse">
                                         <ul class="nav navbar-nav navbar-right">
-                                                    <li><a href="https://twitter.com/ReubenBond">Twitter: @ReubenBond</a></li>
+                                                        <li><a href="/posts">Archive</a></li>
+        <li><a href="/tags">Tags</a></li>
  
-                                                    <div class="follow-button">
                                         </ul>
                                 </div>
                                 <!-- /.navbar-collapse -->
@@ -106,7 +102,16 @@
                                 <div id="content" class="col-md-12">
                                         
 <div class="row">
-    <div class="col-sm-12">
+    <div class="col-sm-8 right-border">
+                <div class="post-preview">
+                    <a href="/posts/dotnet-perf-tuning">
+                        <h2 class="post-title">Performance Tuning for .NET Core</h2>
+                    </a>
+                    <p class="post-meta">Posted on Tuesday, January 15, 2019</p>
+<p>Some of you may know I've been spending whatever time I can scrounge together grinding away at a new serialization library for .NET.
+Serializers can be complicated beasts. They have to be reliable, flexible, and fast beyond reproach.
+I won't convince you that serialization libraries have to be quick — in this post, that's a given. These are some tips from my experience in optimizing <a href="https://github.com/ReubenBond/Hagar">Hagar</a>'s performance. <strong>Most of this advice is applicable to other types of libraries or applications.</strong></p>                </div>       
+                    <hr /> 
                 <div class="post-preview">
                     <a href="/posts/codegen-2-il-boogaloo">
                         <h2 class="post-title">.NET IL Generation - Writing DeepCopy</h2>
@@ -136,22 +141,54 @@
             </li>
         </ul>
     </div>
+    <div class="col-sm-4 sidebar">
+        <hr class="visible-xs-block" />
+
+            <h5>Tags</h5>
+            <div>
+                    <a role="button" href="/tags/CodeGen" class="btn btn-default btn-sm"> CodeGen (2)</a>
+                    <a role="button" href="/tags/IL" class="btn btn-default btn-sm"> IL (1)</a>
+                    <a role="button" href="/tags/Wyam" class="btn btn-default btn-sm"> Wyam (1)</a>
+                    <a role="button" href="/tags/Hagar" class="btn btn-default btn-sm"> Hagar (1)</a>
+                    <a role="button" href="/tags/Blog" class="btn btn-default btn-sm"> Blog (1)</a>
+                    <a role="button" href="/tags/Projects" class="btn btn-default btn-sm"> Projects (1)</a>
+                    <a role="button" href="/tags/Performance" class="btn btn-default btn-sm"> Performance (1)</a>
+                    <a role="button" href="/tags/Serialization" class="btn btn-default btn-sm"> Serialization (1)</a>
+                    <a role="button" href="/tags/Visual-Studio-Online" class="btn btn-default btn-sm"> Visual Studio Online (1)</a>
+            </div>
+            <ul class="pager">
+                <li class="next">
+                    <a href="/tags">View All Tags &rarr;</a>
+                </li>
+            </ul>
+
+            <hr />
+            <h5>Older Posts</h5>
+            <ul class="list-unstyled">
+            </ul>
+                <ul class="pager">
+                    <li class="next">
+                        <a href="/posts">Archive &rarr;</a>
+                    </li>
+                </ul>
+
+        
+    </div> 
 </div>
 
                                 </div>
                         </div>
                 </div>
-                                
+                
+                <hr>
+                
                 <!-- Footer -->
                 <footer>
                         <div class="container">
         <div class="row">
                 <div class="col-md-12 text-center">
-                    <div>
-                        <a href="https://twitter.com/ReubenBond?ref_src=twsrc%5Etfw" class="twitter-follow-button" data-size="large" data-show-count="false">Follow @ReubenBond</a>
-                    </div>
                     <p class="copyright text-muted">
-                        Copyright © 2018
+                        Copyright © 2019
                         <br />
                             <a href="/feed.rss"><i class="fa fa-rss"></i> RSS Feed</a>
                         |
@@ -174,18 +211,6 @@
                                 targets: '.intro-header,.navbar',
                                 images: '.intro-header'
                         });
-                </script>
-
-                <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-
-                <!-- Global site tag (gtag.js) - Google Analytics -->
-                <script async src="https://www.googletagmanager.com/gtag/js?id=UA-77999682-2"></script>
-                <script>
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-
-                gtag('config', 'UA-77999682-2');
                 </script>
         </body>
 </html>

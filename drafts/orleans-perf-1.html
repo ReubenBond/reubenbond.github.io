@@ -5,7 +5,7 @@
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
 
-        <title>reublog - Archive</title>
+        <title>reublog - Investigating</title>
         <meta name="description" content="reublog" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0">        
 
@@ -28,9 +28,9 @@
         <meta name="msapplication-tooltip" content="reublog" />
         <meta name="msapplication-starturl" content="/" />
 
-        <meta property="og:title" content="reublog - Archive" />
+        <meta property="og:title" content="reublog - Investigating" />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="http://reubenbond.github.io/posts" />
+        <meta property="og:url" content="http://reubenbond.github.io/drafts/orleans-perf-1" />
         <!-- TODO: More social graph meta tags -->
 
         <script src="/assets/js/jquery.min.js"></script>
@@ -83,12 +83,12 @@
                 </nav>
                 
                 <!-- Page Header -->
-                <header class="intro-header" id="intro-header" style="background-image: url(&quot;/images/header.jpg&quot;)">
+                <header class="intro-header" id="intro-header" style="background-image: url(&quot;/images/codegen-1-banner.png&quot;)">
                         <div class="container">
                                 <div class="row">
                                         <div class="col-md-12">
 <div class="site-heading">
-    <h1>Archive</h1>
+    <h1>Investigating</h1>
 </div>                                            </div>
                                 </div>
                         </div>
@@ -98,47 +98,21 @@
                 <div class="container">
                         <div class="row">
                                 <div id="content" class="col-md-12">
-                                        
-        <h1>2019</h1>
-        <hr />
-
-        <div class="post-list">
-            <a href="/posts/dotnet-perf-tuning">
-                <h3 class="post-title">Performance Tuning for .NET Core</h3>
-            </a>
-            <p class="post-meta">Posted on Tuesday, January 15, 2019</p>      
-<p>Some of you may know I've been spending whatever time I can scrounge together grinding away at a new serialization library for .NET.
-Serializers can be complicated beasts. They have to be reliable, flexible, and fast beyond reproach.
-I won't convince you that serialization libraries have to be quick — in this post, that's a given. These are some tips from my experience in optimizing <a href="https://github.com/ReubenBond/Hagar">Hagar</a>'s performance. <strong>Most of this advice is applicable to other types of libraries or applications.</strong></p>        </div>   
-        <h1>2017</h1>
-        <hr />
-
-        <div class="post-list">
-            <a href="/posts/codegen-2-il-boogaloo">
-                <h3 class="post-title">.NET IL Generation - Writing DeepCopy</h3>
-                    <h4 class="post-subtitle">Implementing a powerful object cloning library using IL generation.</h4>
-            </a>
-            <p class="post-meta">Posted on Saturday, November 4, 2017</p>      
-<p><em>This is the second part in a series of short posts covering code generation on the .NET platform.</em></p>        </div>   
-        <div class="post-list">
-            <a href="/posts/codegen-1">
-                <h3 class="post-title">Code Generation on .NET</h3>
-                    <h4 class="post-subtitle">A brief overview of code generation APIs in .NET</h4>
-            </a>
-            <p class="post-meta">Posted on Wednesday, November 1, 2017</p>      
-<p><em>This is the first part in what's hopefully a series of short posts covering code generation on the .NET platform.</em></p>        </div>   
-        <div class="post-list">
-            <a href="/posts/-setting-up-wyam">
-                <h3 class="post-title">Deploying Wyam To GitHub Using Visual Studio Online</h3>
-            </a>
-            <p class="post-meta">Posted on Tuesday, October 3, 2017</p>      
-<p>Here goes nothing! This blog is built with <a href="https://twitter.com/daveaglick">Dave Glick's</a> <a href="https://wyam.io/">Wyam</a> static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages. Here's how to set up something similar.</p>        </div>   
-    <ul class="pager">
-        <li class="previous">                
-        </li>
-        <li class="next">
-        </li>
-    </ul>
+                                        <p>After arriving in Redmond and completing the mandatory New Employee Orientation, my first task on the Orleans team was to assist with some ongoing performance investigations in order to ensure that Orleans' upcoming transactions support is ready for internal users and hence release.</p>
+<p>We were seeing significant performance issues and a large number of transaction failures in the stress/load tests against our test cluster. A large fraction of transactions were stalling until timeout. We needed to know why.</p>
+<p>Our initial investigations focused on the transaction management code. Maybe there was a deadlock somewhere. We took a divide-and-conquer approach, replacing internal transaction components with stubbed-out variants. The problem was more-or-less isolated to the <code>ITransactionalState&lt;T&gt;</code> implementation which sits on every grain. The transactional state is responsible for loading and modifying grain state and handling the various transaction phases (Start, Prepare, Abort, Commit, Confirm) as well as optimizing multiple overlapping transactions within the isolation guarantees using a reader-writer lock. You can see that it's not a small amount of code, but isolating the issue further was proving difficult for reasons not limited to the fact that taking out any one piece was not showing a dramatic improvement.</p>
+<p>Profiling data is critical for performance investigations, so after requesting obtaining permissions to directly access the machines in our test cluster, we collected ETW logs using <a href="https://github.com/Microsoft/perfview">PerfView</a> using a command similar to this:</p>
+<pre><code>PerfView.exe /acceptEULA /noGui /threadTime /zip /maxCollectSec:30 /dataFile:1.etl collect
+</code></pre>
+<p>Analyzing the resulting <code>.etl</code> file locally, looking at a <a href="http://www.brendangregg.com/flamegraphs.html">flame graph</a> for the stack trace samples, the problem is immediately apparent.</p>
+<p><img src="/images/lock_contention2.png" class="img-fluid" alt="Flame Graph" /></p>
+<p>The details are too small to read on that view, but by hovering the mouse over each of the bars we can see which method that stack frame represents. The arrows point to the stack frames where the CPU is waiting on a lock and in this case, that lock is on the global .NET Timer queue. The plateau towards the right is from the thread servicing the timer queue and firing the expired timers, which also needs to acquire the lock.</p>
+<p>Our load tests are running on .NET Framework 4.6.2 and therefore <code>System.Threading.Timer</code> is implemented using a <a href="https://referencesource.microsoft.com/#mscorlib/system/threading/timer.cs,208ff87939c84fe3">global queue (linked list) of timers</a> which is protected by a single lock object. Any operations on this queue must acquire that lock. This is something we were already aware of and Orleans 2.1.0 includes a <a href="https://github.com/dotnet/orleans/pull/4399">PR which alleviates potential lock contention on this queue</a> for our main source of timers (response timeout timers).</p>
+<p>The transactions code never uses <code>Timer</code>, so why is this a problem? Transactions makes use of <code>Task.Delay</code> for several kinds of tasks and it shows up in most components. This is why we couldn't narrow down the performance issues to one particular piece of code. <code>Task.Delay</code> uses a <code>Timer</code> under the hood, creating a <code>Timer</code> which might fire once (if it isn't canceled) and deregisters it once it's no longer needed. Our use of <code>Task.Delay</code> was causing this performance degradation under load.</p>
+<p>A .NET Core 3.0 user may never have seen such contention, since a good deal of work has gone into .NET Core to improve <code>Timer</code> and <code>Task.Delay</code> performance. See <a href="https://github.com/dotnet/coreclr/pull/14527">#14527</a> and <a href="https://github.com/dotnet/coreclr/pull/20302">#20302</a>.</p>
+<p>How do we fix this contention? After verifying that a fix here would actually remedy the problem (success!), I set to work implementing a hopefully simple replacement for <code>Task.Delay</code>. The result is <a href="https://github.com/dotnet/orleans/pull/5201">in this PR</a>. The gist of how it works is that it uses a single <code>Timer</code> instance to service thread-local timer collections. The firing of the timers does not need to be precise, so having a timer fire late is not a concern in these uses. Lock contention is largely avoided by using thread-local data structures, but safety is retained by using a light-weight reentrant <code>Interlock.CompareExchange</code> lock. See <a href="https://github.com/dotnet/orleans/pull/5201">the PR</a> for more details.</p>
+<p>The implementation is based on earlier work by <a href="https://github.com/dVakulen">&#64;dVakulen</a> in <a href="https://github.com/dotnet/orleans/pull/2060/files#diff-a694ce799337a9585c6bb404e7ca2339">#2060</a>.</p>
+<p>The new implementation resulted in an approximately 400% increase in throughput with zero failures. <a href="https://github.com/dotnet/orleans/releases/tag/v2.2.0-rc1">Orleans 2.2.0-rc1</a> includes this improvement.</p>
 
                                 </div>
                         </div>

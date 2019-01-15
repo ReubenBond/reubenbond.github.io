@@ -4,9 +4,143 @@
 		<title>reublog</title>
 		<link>http://reubenbond.github.io/</link>
 		<description>reublog</description>
-		<copyright>2018</copyright>
-		<pubDate>Tue, 09 Oct 2018 01:41:41 GMT</pubDate>
-		<lastBuildDate>Tue, 09 Oct 2018 01:41:41 GMT</lastBuildDate>
+		<copyright>2019</copyright>
+		<pubDate>Tue, 15 Jan 2019 17:44:01 GMT</pubDate>
+		<lastBuildDate>Tue, 15 Jan 2019 17:44:01 GMT</lastBuildDate>
+		<item>
+			<title>Performance Tuning for .NET Core</title>
+			<link>http://reubenbond.github.io/posts/dotnet-perf-tuning</link>
+			<description>&lt;p&gt;Some of you may know I've been spending whatever time I can scrounge together grinding away at a new serialization library for .NET.
+Serializers can be complicated beasts. They have to be reliable, flexible, and fast beyond reproach.
+I won't convince you that serialization libraries have to be quick — in this post, that's a given. These are some tips from my experience in optimizing &lt;a href="https://github.com/ReubenBond/Hagar"&gt;Hagar&lt;/a&gt;'s performance. &lt;strong&gt;Most of this advice is applicable to other types of libraries or applications.&lt;/strong&gt;&lt;/p&gt;</description>
+			<enclosure url="http://reubenbond.github.io/images/header.jpg" length="0" type="image" />
+			<guid>http://reubenbond.github.io/posts/dotnet-perf-tuning</guid>
+			<pubDate>Tue, 15 Jan 2019 00:00:00 GMT</pubDate>
+			<content:encoded>&lt;p&gt;Some of you may know I've been spending whatever time I can scrounge together grinding away at a new serialization library for .NET.
+Serializers can be complicated beasts. They have to be reliable, flexible, and fast beyond reproach.
+I won't convince you that serialization libraries have to be quick — in this post, that's a given. These are some tips from my experience in optimizing &lt;a href="https://github.com/ReubenBond/Hagar"&gt;Hagar&lt;/a&gt;'s performance. &lt;strong&gt;Most of this advice is applicable to other types of libraries or applications.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;A post on performance should have minimal overhead and get straight to the point, so this post focuses on tips to help you and things to look out for. &lt;a href="https://twitter.com/reubenbond"&gt;Message me on Twitter&lt;/a&gt; if something is unclear or you have something to add.&lt;/p&gt;
+&lt;h2 id="maximize-profitable-inlining"&gt;Maximize profitable inlining&lt;/h2&gt;
+&lt;p&gt;Inlining is the technique where a method body is copied to the call site so that we can avoid the cost of jumping, argument passing, and register saving/restoring. In addition to saving those costs, inlining is a requirement for other optimizations. Roslyn (C#'s compiler) does not inline code. Instead, it is the responsibility of the JIT, as are most optimizations.&lt;/p&gt;
+&lt;h3 id="use-static-throw-helpers"&gt;Use static &lt;em&gt;throw helpers&lt;/em&gt;&lt;/h3&gt;
+&lt;p&gt;A recent change which involved a significant refactor added around 20ns to the call duration for the serialization benchmark, increasing times from ~130ns to ~150ns (which is significant).&lt;/p&gt;
+&lt;p&gt;The culprit was the &lt;code&gt;throw&lt;/code&gt; statement added in this helper method:&lt;/p&gt;
+&lt;pre&gt;&lt;code class="language-C#"&gt;public static Writer&amp;lt;TBufferWriter&amp;gt; CreateWriter&amp;lt;TBufferWriter&amp;gt;(
+    this TBufferWriter buffer,
+    SerializerSession session) where TBufferWriter : IBufferWriter&amp;lt;byte&amp;gt;
+{
+    if (session == null) throw new ArgumentNullException(nameof(session));
+    return new Writer&amp;lt;TBufferWriter&amp;gt;(buffer, session);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;When a method contains a &lt;code&gt;throw&lt;/code&gt; statement, the JIT will not inline it. The common trick to solve this is to add a static &amp;quot;throw helper&amp;quot; method to do the dirty work for you, so the end result looks like this:&lt;/p&gt;
+&lt;pre&gt;&lt;code class="language-csharp"&gt;public static Writer&amp;lt;TBufferWriter&amp;gt; CreateWriter&amp;lt;TBufferWriter&amp;gt;(
+    this TBufferWriter buffer,
+    SerializerSession session) where TBufferWriter : IBufferWriter&amp;lt;byte&amp;gt;
+{
+    if (session == null) ThrowSessionNull();
+    return new Writer&amp;lt;TBufferWriter&amp;gt;(buffer, session);
+
+    void ThrowSessionNull() =&amp;gt; throw new ArgumentNullException(nameof(session));
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Crisis averted. The codebase uses this trick in many places. Having the &lt;code&gt;throw&lt;/code&gt; statement in a separate method may have other benefits such as improving the locality of your commonly used code paths, but I'm unsure and haven't measured the impact.&lt;/p&gt;
+&lt;h3 id="minimize-virtualinterface-calls"&gt;Minimize virtual/interface calls&lt;/h3&gt;
+&lt;p&gt;Virtual calls are slower than direct calls. If you're writing a performance critical system then there's a good chance you'll see virtual call overhead show up in the profiler. For one, virtual calls require indirection.&lt;/p&gt;
+&lt;p&gt;Devirtualization is a feature of many JIT Compilers, and RyuJIT is no exception. It's a complicated feature, though, and there are not many cases where RyuJIT can currently &lt;em&gt;prove&lt;/em&gt; (to itself) that a method can be devirtualized and therefore become a candidate for inlining. Here are a couple of general tips for taking advantage of devirtualization, but I'm sure there are more (so let me know if you have any).&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Mark classes as &lt;code&gt;sealed&lt;/code&gt; by default. When a class/method is marked as &lt;code&gt;sealed&lt;/code&gt;, RyuJIT can take that into account and is likely able to inline a method call.&lt;/li&gt;
+&lt;li&gt;Mark &lt;code&gt;override&lt;/code&gt; methods as &lt;code&gt;sealed&lt;/code&gt; if possible.&lt;/li&gt;
+&lt;li&gt;Use concrete types instead of interfaces. Concrete types give the JIT more information, so it has a better chance of being able to inline your call.&lt;/li&gt;
+&lt;li&gt;Instantiate and use non-sealed objects in the same method (rather than having a 'create' method). RyuJIT can devirtualize non-sealed method calls when the type is definitely known, such as immediately after construction.&lt;/li&gt;
+&lt;li&gt;Use generic type constraints for polymorphic types so that they can be specialized using a concrete type and interface calls can be devirtualized. In Hagar, our core writer type is defined as follows:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class="language-csharp"&gt;public ref struct Writer&amp;lt;TBufferWriter&amp;gt; where TBufferWriter : IBufferWriter&amp;lt;byte&amp;gt;
+{
+    private TBufferWriter output;
+    // --- etc ---
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;All calls to methods on &lt;code&gt;output&lt;/code&gt; in the CIL which Roslyn emits will be preceded by a &lt;code&gt;constrained&lt;/code&gt; instruction which tells the JIT that instead of making a virtual/interface call, the call can be made to the precise method defined on &lt;code&gt;TBufferWriter&lt;/code&gt;. This helps with devirtualization. All calls to methods defined on &lt;code&gt;output&lt;/code&gt; are successfully devirtualized as a result. Here's &lt;a href="https://github.com/dotnet/coreclr/issues/9908"&gt;a CoreCLR thread by Andy Ayers&lt;/a&gt; on the JIT team which details current and future work for devirtualization.&lt;/p&gt;
+&lt;h2 id="reduce-allocations"&gt;Reduce allocations&lt;/h2&gt;
+&lt;p&gt;.NET's garbage collector is a remarkable piece of engineering. GC allows for algorithmic optimizations for some lock-free data structures and also removes whole classes of bugs and lightens the developer's cognitive load. All things considered, garbage collection is a &lt;em&gt;tremendously&lt;/em&gt; successful technique for memory management.&lt;/p&gt;
+&lt;p&gt;However, while the GC is a powerful work horse, it helps to lighten its load not only because it means your application will pause for collection less often (and more generally, less CPU time will be devoted to GC work), but also because lightening working set is beneficial for cache locality.&lt;/p&gt;
+&lt;p&gt;The rule-of-thumb for allocations is that they should either die in the first generation (Gen0) or live forever in the last (Gen2).&lt;/p&gt;
+&lt;p&gt;.NET uses a bump allocator where each thread allocates objects from its per-thread context by 'bumping' a pointer. For this reason, better cache locality can be achieved for short-lived allocations when they are allocated and used on the same thread.&lt;/p&gt;
+&lt;p&gt;For more info on .NET's GC, see &lt;a href="https://twitter.com/matthewwarren"&gt;Matt Warren&lt;/a&gt;'s blog post series, &lt;a href="http://mattwarren.org/2016/02/04/learning-how-garbage-collectors-work-part-1/"&gt;&lt;em&gt;Learning How Garbage Collectors Work&lt;/em&gt;&lt;/a&gt; here and pre-order &lt;a href="https://twitter.com/konradkokosa"&gt;Konrad Kokosa&lt;/a&gt;'s book, &lt;a href="https://prodotnetmemory.com/"&gt;&lt;em&gt;Pro .NET Memory Management&lt;/em&gt;  here&lt;/a&gt;. Also check out his fantastic free &lt;a href="https://prodotnetmemory.com/data/netmemoryposter.pdf"&gt;.NET memory management poster here&lt;/a&gt;, it's a great reference.&lt;/p&gt;
+&lt;h3 id="pool-buffersobjects"&gt;Pool buffers/objects&lt;/h3&gt;
+&lt;p&gt;Hagar itself doesn't manage buffers but instead defers the responsibility to the user. This might sound onerous but it's not, since it's compatible with &lt;a href="https://blogs.msdn.microsoft.com/dotnet/2018/07/09/system-io-pipelines-high-performance-io-in-net/"&gt;&lt;code&gt;System.IO.Pipelines&lt;/code&gt;&lt;/a&gt;. Therefore, we can take advantage of the high performance buffer pooling which the default &lt;code&gt;Pipe&lt;/code&gt; provides by means of &lt;code&gt;System.Buffers.ArrayPool&amp;lt;T&amp;gt;&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Generally speaking, reusing buffers lets you put much less pressure on the GC - your users will be thankful. Don't write your own buffer pool, unless you truly need to, though - those times have passed.&lt;/p&gt;
+&lt;h3 id="avoid-boxing"&gt;Avoid boxing&lt;/h3&gt;
+&lt;p&gt;Wherever possible, do not box value types by casting them to a reference type. This is common advice, but it requires some consideration in your API design. In Hagar, interface and method definitions which might accept value types are made generic so that they can be specialized to the precise type and avoid boxing/unboxing costs. As a result, there is no hot-path boxing. Boxing is still present in some cases, such as string formatting for exception methods. Those particular boxing allocations can be removed by explicit &lt;code&gt;.ToString()&lt;/code&gt; calls on the arguments.&lt;/p&gt;
+&lt;h3 id="reduce-closure-allocations"&gt;Reduce closure allocations&lt;/h3&gt;
+&lt;p&gt;Allocate closures only once and store the result for repeated use. For example, it's common to pass a delegate to &lt;code&gt;ConcurrentDictionary&amp;lt;K, V&amp;gt;.GetOrAdd&lt;/code&gt;. Instead of writing the delegate as an inline lambda, define is as a private field on the class. Here an example from the optional &lt;code&gt;ISerializable&lt;/code&gt; support package in Hagar:&lt;/p&gt;
+&lt;pre&gt;&lt;code class="language-csharp"&gt;private readonly Func&amp;lt;Type, Action&amp;lt;object, SerializationInfo, StreamingContext&amp;gt;&amp;gt; createConstructorDelegate;
+
+public ObjectSerializer(SerializationConstructorFactory constructorFactory)
+{
+    // Other parameters/statements omitted.
+    this.createConstructorDelegate = constructorFactory.GetSerializationConstructorDelegate;
+}
+
+// Later, on a hot code path:
+var constructor = this.constructors.GetOrAdd(info.ObjectType, this.createConstructorDelegate);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id="minimize-copying"&gt;Minimize copying&lt;/h2&gt;
+&lt;p&gt;.NET Core 2.0 and 2.1 and recent C# versions have made considerable strides in allowing library developers to eliminate data copying. The most notable addition is &lt;code&gt;Span&amp;lt;T&amp;gt;&lt;/code&gt;, but it's also worth mentioning &lt;code&gt;in&lt;/code&gt; parameter modifiers and &lt;code&gt;readonly struct&lt;/code&gt;.&lt;/p&gt;
+&lt;h3 id="use-spant-to-avoid-array-allocations-and-avoid-data-copying"&gt;Use &lt;code&gt;Span&amp;lt;T&amp;gt;&lt;/code&gt; to avoid array allocations and avoid data copying&lt;/h3&gt;
+&lt;p&gt;&lt;code&gt;Span&amp;lt;T&amp;gt;&lt;/code&gt; and friends are a gigantic performance win for .NET, particularly .NET Core where they use an optimized representation to reduce their size, which required adding GC support for interior pointers. Interior pointers are managed references which point to within the bounds of an array, as opposed to only being able to point to the first element and therefore requiring an additional field containing an offset into the array. For more info on &lt;code&gt;Span&amp;lt;T&amp;gt;&lt;/code&gt; and friends, read Stephen Toub's article, &lt;a href="https://msdn.microsoft.com/en-us/magazine/mt814808.aspx"&gt;&lt;em&gt;All About Span: Exploring a New .NET Mainstay&lt;/em&gt; here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Hagar makes extensive use of &lt;code&gt;Span&amp;lt;T&amp;gt;&lt;/code&gt; because it allows us to cheaply create views over small sections of larger buffers to work with. Enough has been written on the subject that there's no use me writing more here.&lt;/p&gt;
+&lt;h3 id="pass-structs-by-ref-to-minimize-on-stack-copies"&gt;Pass structs by &lt;code&gt;ref&lt;/code&gt; to minimize on-stack copies&lt;/h3&gt;
+&lt;p&gt;Hagar uses two main structs, &lt;code&gt;Reader&lt;/code&gt; &amp;amp; &lt;code&gt;Writer&amp;lt;TOutputBuffer&amp;gt;&lt;/code&gt;. These structs each contain several fields and are passed to almost every call along the serialization/deserialization call path.&lt;/p&gt;
+&lt;p&gt;Without intervention, each method call made with these structs would carry significant weight since the entire struct would need to be copied onto the stack for every call, not to mention any mutations would need to be copied back to the caller.&lt;/p&gt;
+&lt;p&gt;We can avoid that cost by passing these structs as &lt;code&gt;ref&lt;/code&gt; parameters. C# also supports using &lt;code&gt;ref this&lt;/code&gt; as the target for an extension method, which is very convenient. As far as I know, there's no way to ensure that a particular struct type is always passed by ref and this can lead to subtle bugs if you accidentally omit &lt;code&gt;ref&lt;/code&gt; in the parameter list of a call, since the struct will be silently copied and modifications made by a method (eg, advancing a write pointer) will be lost.&lt;/p&gt;
+&lt;h3 id="avoid-defensive-copies"&gt;Avoid defensive copies&lt;/h3&gt;
+&lt;p&gt;Roslyn has to do some work to guarantee some language invariants sometimes. When a &lt;code&gt;struct&lt;/code&gt; is stored in a &lt;code&gt;readonly&lt;/code&gt; field, the compiler will insert instructions to &lt;em&gt;defensively copy&lt;/em&gt; that field before involving it in any operation which isn't guaranteed to &lt;em&gt;not&lt;/em&gt; mutate it. Typically this means calls to method defined on the struct type itself because passing a struct as argument to a method defined on another type already requires copying the struct onto the stack (unless it's passed by &lt;code&gt;ref&lt;/code&gt; or &lt;code&gt;in&lt;/code&gt;).&lt;/p&gt;
+&lt;p&gt;This defensive copy can be avoided if the struct is defined as a &lt;code&gt;readonly struct&lt;/code&gt;, which is a C# 7.2 language feature, enabled by adding &lt;code&gt;&amp;lt;LangVersion&amp;gt;7.2&amp;lt;/LangVersion&amp;gt;&lt;/code&gt; to your csproj file.&lt;/p&gt;
+&lt;p&gt;Sometimes it's better to omit the &lt;code&gt;readonly&lt;/code&gt; modifier on an otherwise immutable struct field if you are unable to define it as a &lt;code&gt;readonly struct&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;See Jon Skeet's NodaTime library as an example. In &lt;a href="https://github.com/nodatime/nodatime/pull/1130"&gt;this PR&lt;/a&gt;, Jon made most structs &lt;code&gt;readonly&lt;/code&gt; and was therefore able to add the &lt;code&gt;readonly&lt;/code&gt; modifier to fields holding those structs without negatively impacting performance.&lt;/p&gt;
+&lt;h2 id="reduce-branching-branch-misprediction"&gt;Reduce branching &amp;amp; branch misprediction&lt;/h2&gt;
+&lt;p&gt;Modern CPUs rely on having long pipelines of instructions which are processed with some concurrency. This involves the CPU analyzing instructions to determine which ones aren't reliant on previous instructions and also involves guessing which conditional jump statements are going to be taken. In order to do this, the CPU uses a component called the branch predictor which is responsible for guessing which branch will be taken. It typically does this by reading &amp;amp; writing entries in a table, revising its prediction based upon what happened last time the conditional jump was executed.&lt;/p&gt;
+&lt;p&gt;When it guesses correctly, this prediction process provides a substantial speedup. When it mispredicts the branch (jump target), however, it needs to throw out all of the work performed in processing instructions after the branch and re-fill the pipeline with instructions from the correct branch before continuing execution.&lt;/p&gt;
+&lt;p&gt;The fastest branch is no branch. First try to minimize the number of branches, always measuring whether or not your alternative is faster. When you cannot eliminate a branch, try to minimize misprediction rates. This may involve &lt;a href="https://stackoverflow.com/a/11227902/635314"&gt;using sorted data&lt;/a&gt; or restructuring your code.&lt;/p&gt;
+&lt;p&gt;One strategy for eliminating a branch is to replace it with a lookup. Sometimes an algorithm can be made branch-free instead of using conditionals. Sometimes &lt;a href="https://mijailovic.net/2018/06/06/sha256-armv8/"&gt;hardware&lt;/a&gt; &lt;a href="https://blogs.msdn.microsoft.com/dotnet/2018/10/10/using-net-hardware-intrinsics-api-to-accelerate-machine-learning-scenarios/"&gt;intrinsics&lt;/a&gt; can be used to eliminate branching.&lt;/p&gt;
+&lt;h1 id="other-miscellaneous-tips"&gt;Other miscellaneous tips&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;Avoid LINQ. LINQ is great in application code, but rarely belongs on a hot path in library/framework code. LINQ is difficult for the JIT to optimize (&lt;code&gt;IEnumerable&amp;lt;T&amp;gt;&lt;/code&gt;...) and tends to be allocation-happy.&lt;/li&gt;
+&lt;li&gt;Use concrete types instead of interfaces or abstract types. This was mentioned above in the context of inlining, but this has other benefits. Perhaps the most common being that if you are iterating over a &lt;code&gt;List&amp;lt;T&amp;gt;&lt;/code&gt;, it's best to &lt;em&gt;not&lt;/em&gt; cast that list to &lt;code&gt;IEnumerable&amp;lt;T&amp;gt;&lt;/code&gt; first (eg, by using LINQ or passing it to a method as an &lt;code&gt;IEnumerable&amp;lt;T&amp;gt;&lt;/code&gt; parameter). The reason for this is that enumerating over a list using &lt;code&gt;foreach&lt;/code&gt; uses a non-allocating &lt;code&gt;List&amp;lt;T&amp;gt;.Enumerator&lt;/code&gt; struct, but when it's cast to &lt;code&gt;IEnumerable&amp;lt;T&amp;gt;&lt;/code&gt;, that struct must be boxed to &lt;code&gt;IEnumerator&amp;lt;T&amp;gt;&lt;/code&gt; for &lt;code&gt;foreach&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;Reflection is exceptionally useful in library code, but it &lt;em&gt;will&lt;/em&gt; kill you if you give it the chance. Cache the results of reflection, consider generating delegates for accessors using IL or Roslyn, or better yet, use an existing library such as &lt;a href="https://github.com/aspnet/Common/blob/ff87989d893b000aac1bfef0157c92be1f04f714/shared/Microsoft.Extensions.ObjectMethodExecutor.Sources/ObjectMethodExecutor.cs"&gt;&lt;code&gt;Microsoft.Extensions.ObjectMethodExecutor.Sources&lt;/code&gt;&lt;/a&gt;, &lt;a href="https://github.com/aspnet/Common/blob/ff87989d893b000aac1bfef0157c92be1f04f714/shared/Microsoft.Extensions.PropertyHelper.Sources/PropertyHelper.cs"&gt;&lt;code&gt;Microsoft.Extensions.PropertyHelper.Sources&lt;/code&gt;&lt;/a&gt;, or &lt;a href="https://github.com/mgravell/fast-member"&gt;&lt;code&gt;FastMember&lt;/code&gt;&lt;/a&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1 id="library-specific-optimizations"&gt;Library-specific optimizations&lt;/h1&gt;
+&lt;h2 id="optimize-generated-code"&gt;Optimize generated code&lt;/h2&gt;
+&lt;p&gt;Hagar uses Roslyn to generate C# code for the POCOs you want to serialize, and this C# code is included in your project at compile time. There are some optimizations which we can perform on the generated code to make things faster.&lt;/p&gt;
+&lt;h3 id="avoid-virtual-calls-by-skipping-codec-lookup-for-well-known-types"&gt;Avoid virtual calls by skipping codec lookup for well-known types&lt;/h3&gt;
+&lt;p&gt;When complex objects contain well known fields such as &lt;code&gt;int&lt;/code&gt;, &lt;code&gt;Guid&lt;/code&gt;, &lt;code&gt;string&lt;/code&gt;, the code generator will directly insert calls to the hand-coded codecs for those types instead of calling into the &lt;code&gt;CodecProvider&lt;/code&gt; to retrieve an &lt;code&gt;IFieldCodec&amp;lt;T&amp;gt;&lt;/code&gt; instance for that type. This lets the JIT inline those calls and avoids virtual/interface indirection.&lt;/p&gt;
+&lt;h3 id="unimplemented-specialize-generic-types-at-runtime"&gt;(Unimplemented) Specialize generic types at runtime&lt;/h3&gt;
+&lt;p&gt;Similar to above, the code generator could generate code which uses specialization at runtime.&lt;/p&gt;
+&lt;h2 id="pre-compute-constant-values-to-eliminate-some-branching"&gt;Pre-compute constant values to eliminate some branching&lt;/h2&gt;
+&lt;p&gt;During serialization, each field is prefixed with a header – usually a single byte – which tells the deserializer which field was encoded. This field header contains 3 pieces of info: the wire type of the field (fixed-width, length-prefixed, tag-delimited, referenced, etc), the schema type of the field (expected, well-known, previously-defined, encoded) which is used for polymorphism, and dedicates the last 3 bits to encoding the field id (if it's less than 7). In many cases, it's possible to know exactly what this header byte will be at compile time. If a field has a value type, then we know that the runtime type can never differ from the field type and we always know the field id.&lt;/p&gt;
+&lt;p&gt;Therefore, we can often save all of the work required to compute the header value and can directly embed it into code as a constant. This saves branching and generally eliminates a lot of IL code.&lt;/p&gt;
+&lt;h2 id="choose-appropriate-data-structures"&gt;Choose appropriate data structures&lt;/h2&gt;
+&lt;p&gt;One of the big performance disadvantages Hagar has when compared to other serializers such as &lt;a href="https://github.com/mgravell/protobuf-net"&gt;protobuf-net&lt;/a&gt; (in its default configuration?) and &lt;a href="https://github.com/neuecc/MessagePack-CSharp"&gt;MessagePack-CSharp&lt;/a&gt; is that it supports cyclic graphs and therefore must track objects as they're serialized so that object cycles are not lost during deserialization. When this was first implemented, the core data structure was a &lt;code&gt;Dictionary&amp;lt;object, int&amp;gt;&lt;/code&gt;. It was clear in initial benchmarking that reference tracking was a dominating cost. In particular, clearing the dictionary between messages was expensive. By switching to an array of structs instead, the cost of indexing and maintaining the collection is largely eliminated and reference tracking no longer appears in the benchmarks. There is a downside to this: for large object graphs it's likely that this new approach is slower. If that becomes an issue, we can decide to dynamically switch between implementations.&lt;/p&gt;
+&lt;h2 id="choose-appropriate-algorithms"&gt;Choose appropriate algorithms&lt;/h2&gt;
+&lt;p&gt;Hagar spends a lot of time encoding/decoding variable-length integers, often referred to as varints, in order to reduce the size of the payload (which can be more compact for storage/transport). Many binary serializers use this technique, including &lt;a href="https://developers.google.com/protocol-buffers/docs/encoding#varints"&gt;Protocol Buffers&lt;/a&gt;. Even .NET's BinaryWriter uses this encoding. Here's a &lt;a href="https://github.com/Microsoft/referencesource/blob/60a4f8b853f60a424e36c7bf60f9b5b5f1973ed1/mscorlib/system/io/binarywriter.cs#L414"&gt;snippet from the reference source&lt;/a&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code class="language-csharp"&gt;protected void Write7BitEncodedInt(int value) {
+    // Write out an int 7 bits at a time.  The high bit of the byte,
+    // when on, tells reader to continue reading more bytes.
+    uint v = (uint) value;   // support negative numbers
+    while (v &amp;gt;= 0x80) {
+        Write((byte) (v | 0x80));
+        v &amp;gt;&amp;gt;= 7;
+    }
+    Write((byte)v);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Looking at this source, I want to point out that &lt;a href="https://developers.google.com/protocol-buffers/docs/encoding#signed-integers"&gt;ZigZag encoding&lt;/a&gt; may be more efficient for signed integers which contain negative values, rather than casting to &lt;code&gt;uint&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;VarInts in these serializers use an algorithm called Little Endian Base-128 or LEB128, which encodes up to 7 bits per byte. It uses the most significant bit of each byte to indicate whether or not another byte follows (1 = yes, 0 = no). This is a simple format but it may not be the fastest. It might turn out that PrefixVarint is faster. With PrefixVarint, all of those 1s from LEB128 are written in one shot, at the beginning of the payload. This may let us use &lt;a href="https://mijailovic.net/2018/06/06/sha256-armv8/"&gt;hardware&lt;/a&gt; &lt;a href="https://blogs.msdn.microsoft.com/dotnet/2018/10/10/using-net-hardware-intrinsics-api-to-accelerate-machine-learning-scenarios/"&gt;intrinsics&lt;/a&gt; to improve the speed of this encoding &amp;amp; decoding. By moving the size information to the front, we may also be able to read more bytes at a time from the payload, reducing internal bookkeeping and improving performance. If someone wants to implement this in C#, I will happily take a PR if it turns out to be faster.&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;Hopefully you've found something useful in this post. &lt;a href="https://twitter.com/reubenbond"&gt;Let me know&lt;/a&gt; if something is unclear or you have something to add. Since I started writing this, I've moved to Redmond and officially joined Microsoft on the &lt;a href="https://github.com/dotnet/orleans"&gt;Orleans&lt;/a&gt; team, working on some very exciting things.&lt;/p&gt;
+</content:encoded>
+		</item>
 		<item>
 			<title>.NET IL Generation - Writing DeepCopy</title>
 			<link>http://reubenbond.github.io/posts/codegen-2-il-boogaloo</link>
@@ -296,7 +430,7 @@ This post is about fists and how clumpy they always are.
 &lt;p&gt;Great! Try running it using Cake. Because Wyam targets an older version of Cake at the time of writing, I'm adding the &lt;code&gt;--settings_skipverification=true&lt;/code&gt; option so that Cake doesn't complain.&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;cake --settings_skipverification=true -target=Preview
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Open a browser to &lt;a href="http://localhost:5080"&gt;http://localhost:5080&lt;/a&gt; and see the results. The &lt;code&gt;Preview&lt;/code&gt; target watches for file changes so it can automatically recompile &amp;amp; refresh your browser whenever you save changes.&lt;/p&gt;
+&lt;p&gt;Open a browser to http://localhost:5080 and see the results. The &lt;code&gt;Preview&lt;/code&gt; target watches for file changes so it can automatically recompile &amp;amp; refresh your browser whenever you save changes.&lt;/p&gt;
 &lt;h1 id="automating-deployment"&gt;Automating Deployment&lt;/h1&gt;
 &lt;ol&gt;
 &lt;li&gt;Install the &lt;a href="https://marketplace.visualstudio.com/items?itemName=cake-build.cake"&gt;Cake build task from the Visual Studio Marketplace&lt;/a&gt; into VSO.&lt;/li&gt;

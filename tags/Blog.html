@@ -25,17 +25,13 @@
 
 
         <meta name="application-name" content="reublog" />
-        <meta name="msapplication-tooltip" content="reublog - Blog" />
+        <meta name="msapplication-tooltip" content="reublog" />
         <meta name="msapplication-starturl" content="/" />
 
-        <meta property="og:title" content="Blog" />
-        <meta property="og:image" content="http://reubenbond.github.io/images/header.jpg" />
+        <meta property="og:title" content="reublog - Blog" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="http://reubenbond.github.io/tags/Blog" />
-        <meta property="og:description" content="reublog" />
-        
-        <meta name="twitter:card" content="summary" />
-        <meta name="twitter:site" content="@ReubenBond" />
+        <!-- TODO: More social graph meta tags -->
 
         <script src="/assets/js/jquery.min.js"></script>
         <script src="/assets/js/bootstrap.min.js"></script>     
@@ -76,9 +72,9 @@
                                 <!-- Collect the nav links, forms, and other content for toggling -->
                                 <div class="collapse navbar-collapse" id="navbar-collapse">
                                         <ul class="nav navbar-nav navbar-right">
-                                                    <li><a href="https://twitter.com/ReubenBond">Twitter: @ReubenBond</a></li>
+                                                        <li><a href="/posts">Archive</a></li>
+        <li><a href="/tags">Tags</a></li>
  
-                                                    <div class="follow-button">
                                         </ul>
                                 </div>
                                 <!-- /.navbar-collapse -->
@@ -105,7 +101,8 @@
                                         <div class="container-sm-height">
     <div class="row row-sm-height">
         <div class="col-sm-8 right-border col-sm-height">
-                    <div class="post-list">
+            
+        <div class="post-list">
             <a href="/posts/-setting-up-wyam">
                 <h3 class="post-title">Deploying Wyam To GitHub Using Visual Studio Online</h3>
             </a>
@@ -126,6 +123,10 @@
 		
         <div class="col-sm-4 col-sm-height">
                 <a role="button" href="/tags/CodeGen" class="btn btn-default btn-xs">CodeGen (2)</a>
+                <a role="button" href="/tags/Projects" class="btn btn-default btn-xs">Projects (1)</a>
+                <a role="button" href="/tags/Serialization" class="btn btn-default btn-xs">Serialization (1)</a>
+                <a role="button" href="/tags/Hagar" class="btn btn-default btn-xs">Hagar (1)</a>
+                <a role="button" href="/tags/Performance" class="btn btn-default btn-xs">Performance (1)</a>
                 <a role="button" href="/tags/IL" class="btn btn-default btn-xs">IL (1)</a>
                 <a role="button" href="/tags/Wyam" class="btn btn-default btn-xs">Wyam (1)</a>
                 <a role="button" href="/tags/Visual-Studio-Online" class="btn btn-default btn-xs">Visual Studio Online (1)</a>
@@ -136,17 +137,16 @@
                                 </div>
                         </div>
                 </div>
-                                
+                
+                <hr>
+                
                 <!-- Footer -->
                 <footer>
                         <div class="container">
         <div class="row">
                 <div class="col-md-12 text-center">
-                    <div>
-                        <a href="https://twitter.com/ReubenBond?ref_src=twsrc%5Etfw" class="twitter-follow-button" data-size="large" data-show-count="false">Follow @ReubenBond</a>
-                    </div>
                     <p class="copyright text-muted">
-                        Copyright © 2018
+                        Copyright © 2019
                         <br />
                             <a href="/feed.rss"><i class="fa fa-rss"></i> RSS Feed</a>
                         |
@@ -169,18 +169,6 @@
                                 targets: '.intro-header,.navbar',
                                 images: '.intro-header'
                         });
-                </script>
-
-                <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-
-                <!-- Global site tag (gtag.js) - Google Analytics -->
-                <script async src="https://www.googletagmanager.com/gtag/js?id=UA-77999682-2"></script>
-                <script>
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-
-                gtag('config', 'UA-77999682-2');
                 </script>
         </body>
 </html>
