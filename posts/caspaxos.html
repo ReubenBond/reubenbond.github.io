@@ -5,7 +5,7 @@
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
 
-        <title>reublog - Why I&#x27;m excited about CASPaxos</title>
+        <title>reublog - CASPaxos</title>
         <meta name="description" content="reublog" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0">        
 
@@ -28,9 +28,9 @@
         <meta name="msapplication-tooltip" content="reublog" />
         <meta name="msapplication-starturl" content="/" />
 
-        <meta property="og:title" content="reublog - Why I&#x27;m excited about CASPaxos" />
+        <meta property="og:title" content="reublog - CASPaxos" />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="http://reubenbond.github.io/drafts/caspaxos" />
+        <meta property="og:url" content="http://reubenbond.github.io/posts/caspaxos" />
         <!-- TODO: More social graph meta tags -->
 
         
@@ -71,9 +71,20 @@
                         <div class="container">
                                 <div class="row">
                                         <div class="col-md-12">
-<div class="site-heading">
-    <h1>Why I&#x27;m excited about CASPaxos</h1>
-</div>                                            </div>
+
+    
+<div class="post-heading">
+    <h1>CASPaxos</h1>
+        <h2 class="subheading">Linearizable databases without logs</h2>
+    <div class="meta">        
+Published on Tuesday, January 21, 2020<br>    </div>
+        <div class="tags">
+                    <a role="button" href="/tags/CASPaxos" class="btn btn-default btn-xs">CASPaxos</a>
+                    <a role="button" href="/tags/Distributed-Consensus" class="btn btn-default btn-xs">Distributed Consensus</a>
+                    <a role="button" href="/tags/Orleans" class="btn btn-default btn-xs">Orleans</a>
+        </div>     
+</div>
+                                        </div>
                                 </div>
                         </div>
                 </header>
@@ -82,18 +93,23 @@
                 <div class="container">
                         <div class="row">
                                 <div id="content" class="col-md-12">
-                                        <p>Recently I've been playing around with a new algorithm known as <a href="https://arxiv.org/abs/1802.07000">CASPaxos</a>. In this post I'm going to talk about the algorithm and its potential benefits for distributed databases, particularly key-value stores.</p>
+                                        
+
+<p>Recently I've been playing around with a new algorithm known as <a href="https://arxiv.org/abs/1802.07000">CASPaxos</a>. In this post I'm going to talk about the algorithm and its potential benefits for distributed databases, particularly key-value stores.</p>
 <p>Distributed databases must be <strong>reliable</strong> and <strong>scalable</strong>. To achieve reliability, DBs replicate data to other servers. To achieve scalability in terms of total storage capacity, DBs must allow the data to be replicated to only a subset of servers - enough to make the data reasonably reliable but not so much that adding a new server does not increase the total storage capacity of the system or make the system unbearably slow. A typical replication factor is 3: each piece of data is stored on 3 servers. Replications is typically implemented using a consensus algorithm. Well-known algorithms in this family that are used for replication are Raft, Multi-Paxos, and ZAB (which is used in ZooKeeper). Those 3 algorithms make servers agree on the ordering of operations in a log. By executing those operations in order, the database engines on each server can create identical replicas of a database. Logs feature very prominently in distributed/reliable systems (Read <em><a href="https://engineering.linkedin.com/distributed-systems/log-what-every-software-engineer-should-know-about-real-time-datas-unifying">The Log: What every software engineer should know about real-time data's unifying abstraction</a></em> by Jay Kreps).</p>
 <p><a href="https://arxiv.org/abs/1802.07000">CASPaxos</a> is a new algorithm in this space and it is significantly simpler than the aforementioned algorithms because it does not use log replication. It is a slight modification of the original Paxos algorithm, which is very simple and typically used as a minimal building block for more complicated algorithms such as Multi-Paxos. Instead of replicating log entries between servers, CASPaxos replicates entire values. Because of this, it is best suited for relatively small values, such as individual entries in a key-value store.</p>
-<p>So why is this interesting? In short: it offers us simplicity &amp; performance. Before getting into its benefits, here's a brief and inaccurate description of CASPaxos.</p>
+<p>So why is this interesting? In short: it offers us simplicity &amp; performance. Before getting into its benefits, here's a sloppy, inaccurate description of CASPaxos.</p>
 <h2 id="caspaxos">CASPaxos</h2>
-<h1 id="add-description-of-the-algorithm-here">add description of the algorithm here</h1>
+<p>CASPaxos replicates changes to a single register amongst a set of replicas. The register holds a user-defined value which is modified by successive application of some change function (which is a closure). Each of these modifications are protected by version stamps (ballot numbers) which help to ensure that previously committed register values are not clobbered without being first observed by the writer. The protocol facilitates learning previously committed values so that replicas can keep up with one another.</p>
+<p>If you are familiar with Raft, you will know that at its core it replicates a log of values. Conceptually, a log-based replicated state machine folds a fixed function over multiple data (the log entries). By contrast, CASPaxos does not use a fixed function and instead folds varying closures over state, with the resulting state itself being replicated to other replicas.</p>
+<p>To illustrate, the following expansions show how the result of applying <code>[e0, e1, e2]</code> (log entries) in Raft, versus <code>[f0, f1, f2]</code> (closures) in CASPaxos:</p>
 <ul>
-<li>Conceptually, a log-based replicated state machine folds a fixed function over multiple data (the log entries) and replicates the log entries.</li>
-<li>In CASPaxos, we're folding closures over data and replicating the result.</li>
-<li>Raft: state = f(e2, f(e1, f(e0, ∅)]))</li>
-<li>CASPaxos: state = f2(f1(f0(∅)))</li>
+<li>Raft: <code>state = f(e2, f(e1, f(e0, ∅)]))</code></li>
+<li>CASPaxos: <code>state = f2(f1(f0(∅)))</code></li>
 </ul>
+<p>Aside from what gets replicated and how the current state of the system is computed, Raft and CASPaxos are vastly different. For example, CASPaxos is leaderless, whereas Raft uses a strong leader. CASPaxos does not specify the use of heartbeats (in the core algorithm), whereas Raft does. Many of these differences are present because Raft is a more <em>batteries included</em> algorithm which covers much of the practical concerns involved in building a replicated database.</p>
+<p>Neither approach is strictly better than the other, but since the CASPaxos approach (replicating state values rather than log entries) was fairly novel to me in the context of distributed conensus, I'd like to explore some of the implications, especially as they might apply to the systems I work on.</p>
+<p><a href="(https://arxiv.org/abs/1802.07000)">Read the paper</a> to understand the algorithm in more detail.</p>
 <h2 id="simplicity">Simplicity</h2>
 <p>The canonical implementation of CASPaxos by its author <a href="https://twitter.com/rystsov">Denis Rystsov (&#64;rystsov)</a> is <a href="https://github.com/gryadka/js">Gryadka</a>, a key-value store written in JavaScript which sits atop Redis. The core, including the CASPaxos implementation, has less than 500 lines of code. <a href="https://raft.github.io/">Raft</a> was also designed to be a simple and understandable algorithm, but it carries with it the weight of log replication, which brings with it the need for log compaction, which brings with it the need for snapshotting and snapshot transfer. Raft also requires leadership elections because it is built around the concept of a &quot;strong leader&quot;. All writes must be served by the single master in a Raft system, whereas writes can be served by any replica in a CASPaxos system. CASPaxos is simpler to implement than Raft. The <a href="https://raft.github.io/raft.pdf">extended Raft paper</a> is a great read. <a href="https://github.com/ongardie/dissertation#readme">Diego Ongaro's Ph. D dissertation</a> includes an important simplification to the original paper's membership change algorithm. Let's be clear here: Raft definitely achieved its goal of understandability and it truly deserves the widespread adoption it's seen.</p>
 <h2 id="storage-performance">Storage Performance</h2>
@@ -109,7 +125,7 @@
 <h2 id="server-catch-up">Server Catch-up</h2>
 <p>When adding a new server to the database system, the server needs to be brought up to speed with the existing servers. This requires adding it to the consensus group as well as copying all data for the keys which it will be replicating. The CASPaxos paper describes this process as a part of membership change. However, a similar process is needed to ensure that data is sufficiently reliable. For example, if a server loses network connectivity for a few seconds then it may miss some updates to some rarely updated keys. The CASPaxos algorithm does not discuss how to ensure that all updates are eventually replicated. In Raft, it is the leader's responsibility to keep followers up to speed. In a system built around CASPaxos, which is leaderless, we will likely need to implement a different solution.</p>
 <h2 id="membership-change">Membership Change</h2>
-<p>The membership change algorithm in the paper does not offer safety in all cases and it implies a single administrator in the system. Therefore, it is not suitable for use with automated cluster management systems. The <a href="https://github.com/ReubenBond/orleans/tree/poc-caspaxos/src/Orleans.MetadataStore">proof-of-concept CASPaxos implementation</a> on <a href="https://dotnet.github.io/orleans/Documentation/Introduction.html">Orleans</a>, uses a <a href="https://github.com/ReubenBond/orleans/blob/ad69bcaa21381573a39681dd29cb8f2148adc7d4/src/Orleans.MetadataStore/Configuration/ConfigurationManager.cs#L97">different membership change algorithm</a>. It is suitable for automated systems (such a the <a href="https://dotnet.github.io/orleans/Documentation/Runtime-Implementation-Details/Cluster-Management.html">cluster membership algorithm used in Orleans</a>). I believe it is safe, but that has not been demonstrated yet (maybe I should take Lamport's TLA+ workshop). The key idea is to leverage the consensus mechanism of the protocol for cluster membership change, similar to how Raft and Multi-Paxos commit configuration changes to the log. It uses a special purpose register to store cluster configuration. Proposers indicate which version of the configuration they are using in all calls to Acceptors and Acceptors reject requests from Proposers running old configurations. This is similar to Raft's notion of neutralizing old leaders. Additionally membership changes are restricted to at-most one server at a time, which is a special case of <em>joint consensus</em>. This the same restriction that Diego Ongaro specified in <a href="https://github.com/ongardie/dissertation#readme">his Ph. D dissertation</a> for Raft. In a sense, this extension turns CASPaxos into a 2-level store with the cluster configuration register at the top and data registers below, so the ballot vector is <code>[configuration ballot, data ballot]</code>.</p>
+<p>The membership change algorithm in the paper does not offer safety in all cases and it implies a single administrator in the system. Therefore, it is not suitable for use with automated cluster management systems. The <a href="https://github.com/ReubenBond/orleans/tree/poc-caspaxos/src/Orleans.MetadataStore">proof-of-concept CASPaxos implementation</a> on <a href="https://dotnet.github.io/orleans/Documentation/Introduction.html">Orleans</a>, uses a <a href="https://github.com/ReubenBond/orleans/blob/ad69bcaa21381573a39681dd29cb8f2148adc7d4/src/Orleans.MetadataStore/Configuration/ConfigurationManager.cs#L97">different membership change algorithm</a>. It is suitable for automated systems (such a the <a href="https://dotnet.github.io/orleans/Documentation/Runtime-Implementation-Details/Cluster-Management.html">cluster membership algorithm used in Orleans</a>). I believe it is safe, but that has not been demonstrated yet. The key idea is to leverage the consensus mechanism of the protocol for cluster membership change, similar to how Raft and Multi-Paxos commit configuration changes to the log. It uses a special purpose register to store cluster configuration. Proposers indicate which version of the configuration they are using in all calls to Acceptors and Acceptors reject requests from Proposers running old configurations. This is similar to Raft's notion of neutralizing old leaders. Additionally membership changes are restricted to at-most one server at a time, which is a special case of <em>joint consensus</em>. This the same restriction that Diego Ongaro specified in <a href="https://github.com/ongardie/dissertation#readme">his Ph. D dissertation</a> for Raft. In a sense, this extension turns CASPaxos into a 2-level store with the cluster configuration register at the top and data registers below, so the ballot vector is <code>[configuration ballot, data ballot]</code>.</p>
 <h2 id="scale-out">Scale-out</h2>
 <p>Adding additional servers should increase the total storage capacity of the system. CASPaxos specifies only the minimal building block of a key-value store, so this scale-out is not discussed in the paper. The Raft paper also does not specify this, motivating the development of MultiRaft for CockroachDB. The dynamic range-based partitioning scheme used by CockroachDB is a good candidate. Implementing this might involve storing range configurations in registers and extending the membership change modification to include 3 levels, <code>[cluster ballot, range ballot, data ballot]</code>.</p>
 <h2 id="large-values">Large Values</h2>
@@ -119,6 +135,8 @@
 <h1 id="conclusion">Conclusion</h1>
 <p>I hope you've enjoyed the post. If you'd like to discuss any aspects of it, for example some glaring inaccuracies, drop me a line via Twitter (<a href="https://twitter.com/reubenbond">&#64;ReubenBond</a>).</p>
 <p>Distributed Systems is a young field with many exciting areas for research and development.</p>
+
+
 
                                 </div>
                         </div>
