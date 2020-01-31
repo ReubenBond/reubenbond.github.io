@@ -4,7 +4,7 @@
 	<title>reublog</title>
 	<link rel="self" href="http://reubenbond.github.io/" />
 	<rights>2020</rights>
-	<updated>2020-01-30T00:58:44Z</updated>
+	<updated>2020-01-31T01:18:08Z</updated>
 	<logo>http://reubenbond.github.io/images/header.jpg</logo>
 	<subtitle>reublog</subtitle>
 	<entry>
@@ -37,7 +37,7 @@
 &lt;p&gt;By removing the need for logs, CASPaxos can achieve high write throughput with off-the-shelf storage engines.&lt;/p&gt;
 &lt;h2 id="coordination"&gt;Coordination&lt;/h2&gt;
 &lt;p&gt;Each key in a key-value store based on CASPaxos is completely independent of all other keys. This means that no cross-key coordination is required when serving operations on individual keys. Compare this with Raft or MultiRaft where all operations within a given consensus group are strictly ordered. This ordering requires coordination which has some overhead. It means that a slow operation on one key can more easily impact operations on other keys. The low level of coordination required by CASPaxos supports high-concurrency systems without added complexity.&lt;/p&gt;
-&lt;p&gt;Coordination is sometimes required. For example, when implementation multi-object transactions. Multi-object transactions can be implemented as a higher layer on top of a key-value store with linearizable keys using &lt;a href="https://en.wikipedia.org/wiki/Two-phase_commit_protocol"&gt;two-phase commit (2PC)&lt;/a&gt;. For example, this is how we implement &lt;a href="https://www.microsoft.com/en-us/research/publication/transactions-distributed-actors-cloud-2/"&gt;ACID transactions in Orleans&lt;/a&gt;, supporting any strong consistency key-value store.&lt;/p&gt;
+&lt;p&gt;Coordination is sometimes required. For example, when implementing multi-object transactions. Multi-object transactions can be implemented as a higher layer on top of a key-value store with linearizable keys using &lt;a href="https://en.wikipedia.org/wiki/Two-phase_commit_protocol"&gt;two-phase commit (2PC)&lt;/a&gt;. For example, this is how we implement &lt;a href="https://www.microsoft.com/en-us/research/publication/transactions-distributed-actors-cloud-2/"&gt;ACID transactions in Orleans&lt;/a&gt;, supporting any strong consistency key-value store.&lt;/p&gt;
 &lt;h1 id="challenges"&gt;Challenges&lt;/h1&gt;
 &lt;p&gt;So far we've talked about ways in which CASPaxos might be more suitable for building a distributed key-value store than Raft or MultiRaft. CASPaxos is a simple algorithm and there are many system design questions which are not addressed by the paper definition. So here are some potential challenges when building a real-world system on CASPaxos, as well as some thoughts on how to solve them.&lt;/p&gt;
 &lt;h2 id="server-catch-up"&gt;Server Catch-up&lt;/h2&gt;
