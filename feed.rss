@@ -5,8 +5,8 @@
 		<link>http://reubenbond.github.io/</link>
 		<description>reublog</description>
 		<copyright>2020</copyright>
-		<pubDate>Fri, 31 Jan 2020 01:18:08 GMT</pubDate>
-		<lastBuildDate>Fri, 31 Jan 2020 01:18:08 GMT</lastBuildDate>
+		<pubDate>Wed, 22 Jul 2020 18:19:35 GMT</pubDate>
+		<lastBuildDate>Wed, 22 Jul 2020 18:19:35 GMT</lastBuildDate>
 		<item>
 			<title>CASPaxos</title>
 			<link>http://reubenbond.github.io/posts/caspaxos</link>
@@ -18,7 +18,7 @@
 &lt;p&gt;Distributed databases must be &lt;strong&gt;reliable&lt;/strong&gt; and &lt;strong&gt;scalable&lt;/strong&gt;. To achieve reliability, DBs replicate data to other servers. To achieve scalability in terms of total storage capacity, DBs must allow the data to be replicated to only a subset of servers - enough to make the data reasonably reliable but not so much that adding a new server does not increase the total storage capacity of the system or make the system unbearably slow. A typical replication factor is 3: each piece of data is stored on 3 servers. Replications is typically implemented using a consensus algorithm. Well-known algorithms in this family that are used for replication are Raft, Multi-Paxos, and ZAB (which is used in ZooKeeper). Those 3 algorithms make servers agree on the ordering of operations in a log. By executing those operations in order, the database engines on each server can create identical replicas of a database. Logs feature very prominently in distributed/reliable systems (Read &lt;em&gt;&lt;a href="https://engineering.linkedin.com/distributed-systems/log-what-every-software-engineer-should-know-about-real-time-datas-unifying"&gt;The Log: What every software engineer should know about real-time data's unifying abstraction&lt;/a&gt;&lt;/em&gt; by Jay Kreps).&lt;/p&gt;
 &lt;p&gt;&lt;a href="https://arxiv.org/abs/1802.07000"&gt;CASPaxos&lt;/a&gt; is a new algorithm in this space and it is significantly simpler than the aforementioned algorithms because it does not use log replication. It is a slight modification of the original Paxos algorithm, which is very simple and typically used as a minimal building block for more complicated algorithms such as Multi-Paxos. Instead of replicating log entries between servers, CASPaxos replicates entire values. Because of this, it is best suited for relatively small values, such as individual entries in a key-value store.&lt;/p&gt;
 &lt;p&gt;So why is this interesting? In short: it offers us simplicity &amp;amp; performance. Before getting into its benefits, here's a &lt;strong&gt;sloppy, inaccurate description of CASPaxos - &lt;a href="https://arxiv.org/abs/1802.07000"&gt;I recommend you read the paper&lt;/a&gt;&lt;/strong&gt;.&lt;/p&gt;
-&lt;h2 id="caspa"&gt;CASPa&lt;/h2&gt;
+&lt;h2 id="caspaxos"&gt;CASPaxos&lt;/h2&gt;
 &lt;p&gt;CASPaxos replicates changes to a single register amongst a set of replicas. The register holds a user-defined value which is modified by successive application of some change function (which is a closure). Each of these modifications are protected by version stamps (ballot numbers) which help to ensure that previously committed register values are not clobbered without being first observed by the writer. The protocol facilitates learning previously committed values so that replicas can keep up with one another.&lt;/p&gt;
 &lt;p&gt;If you are familiar with Raft, you will know that at its core it replicates a log of values. Conceptually, a log-based replicated state machine folds a fixed function over multiple data (the log entries). By contrast, CASPaxos does not use a fixed function and instead folds varying closures over state, with the resulting state itself being replicated to other replicas.&lt;/p&gt;
 &lt;p&gt;To illustrate, the following expansions show the result of applying &lt;code&gt;[e0, e1, e2]&lt;/code&gt; (log entries) in Raft, versus &lt;code&gt;[f0, f1, f2]&lt;/code&gt; (closures) in CASPaxos:&lt;/p&gt;
