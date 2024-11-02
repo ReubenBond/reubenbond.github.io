@@ -1,0 +1,359 @@
+﻿
+<!DOCTYPE html>
+<html lang="en">
+        <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
+
+        <title>reublog - Orleans V8</title>
+        <meta name="description" content="reublog" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">        
+
+        <link type="application/rss+xml" rel="alternate" title="reublog" href="/feed.rss" />
+                <link type="application/atom+xml" rel="alternate" title="reublog" href="/feed.atom" />
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+        <link rel="icon" href="/favicon.ico" type="image/x-icon">
+
+        <link href="/assets/css/bootstrap.min.css" rel="stylesheet" />
+        <link href="/assets/css/highlight.css" rel="stylesheet">
+        <link href="/assets/css/clean-blog.css" rel="stylesheet" />
+        <link href="/assets/css/master.css" rel="stylesheet" />
+        <link href="/assets/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+        <link href='//fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+        <link href='//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+        <link href="/assets/css/override.css" rel="stylesheet" />
+
+
+        <meta name="application-name" content="reublog" />
+        <meta name="msapplication-tooltip" content="reublog" />
+        <meta name="msapplication-starturl" content="/" />
+
+        <meta property="og:title" content="reublog - Orleans V8" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="http://reubenbond.github.io/drafts/orleans-v8.2.0" />
+        <!-- TODO: More social graph meta tags -->
+
+        
+
+
+        </head>
+        <body>
+                
+                <!-- Navigation -->
+                <nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+                        <div class="container-fluid">
+                                <!-- Brand and toggle get grouped for better mobile display -->
+                                <div class="navbar-header page-scroll">
+                                        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse">
+                                        <span class="sr-only">Toggle navigation</span>
+                                        <span class="icon-bar"></span>
+                                        <span class="icon-bar"></span>
+                                        <span class="icon-bar"></span>
+                                        </button>
+                                        <a class="navbar-brand" href="/">reublog</a>
+                                </div>
+                        
+                                <!-- Collect the nav links, forms, and other content for toggling -->
+                                <div class="collapse navbar-collapse" id="navbar-collapse">
+                                        <ul class="nav navbar-nav navbar-right">
+                                                        <li><a href="/posts">Archive</a></li>
+        <li><a href="/tags">Tags</a></li>
+        <li><a href="/drafts/orleans-v8.2.0">Orleans V8</a></li>
+ 
+                                        </ul>
+                                </div>
+                                <!-- /.navbar-collapse -->
+                        </div>
+                        <!-- /.container -->
+                </nav>
+                
+                <!-- Page Header -->
+                <header class="intro-header" id="intro-header" style="background-image: url(&quot;/images/header.jpg&quot;)">
+                        <div class="container">
+                                <div class="row">
+                                        <div class="col-md-12">
+<div class="site-heading">
+    <h1>Orleans V8</h1>
+</div>                                            </div>
+                                </div>
+                        </div>
+                </header>
+                
+                <!-- Main Content -->
+                <div class="container">
+                        <div class="row">
+                                <div id="content" class="col-md-12">
+                                        <h2 id="new-features">New features</h2>
+<h3 id="activation-repartitioning">Activation repartitioning</h3>
+<p><a href="https://github.com/user-attachments/assets/d12764e9-ec04-433d-bff1-cdb33b3c1b1f">!Activation Repartitioning in action</a></p>
+<blockquote class="blockquote">
+<p>Above: a demonstration showing Activation Repartitioning in action. The red lines represent cross-silo communication. As the red lines are eliminated by the partitioning algorithm, throughput improves to over 2x the initial throughput.</p>
+</blockquote>
+<p><a href="https://github.com/ledjon-behluli">Ledjon Behluli</a> and <a href="https://github.com/ReubenBond">&#64;ReubenBond</a> implemented <strong>activation repartitioning</strong> in <a href="https://github.com/dotnet/orleans/pull/8877">#8877</a>. When enabled, <strong>activation repartitioning</strong> collocates grains based on observed communication patterns to improve performance while keeping load balanced across your cluster. In initial benchmarks, we observe throughput improvements in the range of 30% to 110%. The following paragraphs provide more background and implementation details for those who are interested. The feature is currently <em>experimental</em> and to enable it you need to opt-in on every silo in your cluster using the <code>ISiloBuilder.AddActivationRepartitioner()</code> extension method, suppressing the experimental feature warning:</p>
+<pre><code class="language-csharp">#pragma warning disable ORLEANSEXP001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+siloBuilder.AddActivationRepartitioner();
+#pragma warning restore ORLEANSEXP001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+</code></pre>
+<p>The fastest and cheapest grains calls are ones which don't cross process boundaries. These grain calls do not need to be serialized and do not need to incur network transmission costs. For that reason, collocating related grains within the same host can significantly improve the performance of your application. On the other hand, if all grains were placed in a single host, that host may become overloaded and crash, and you would not be able to scale your application across multiple hosts. How can we maximize collocation of related grains while keeping load across your hosts balanced? Before describing our solution, we need to provide some background.</p>
+<p><a href="https://learn.microsoft.com/dotnet/orleans/grains/grain-placement">Grain placement in Orleans</a> is flexible: Orleans executes a user-defined function when deciding where in a cluster to place each grain, providing your function with a list of the compatible silos in your cluster, that is, the silos which support the grain type and interface version which triggered placement. Grains calls are <em>location-transparent</em>, so callers do not need to know where a grain is located, allowing grains to be placed anywhere across your cluster of hosts. Each grain's current location is stored in a <a href="https://learn.microsoft.com/dotnet/orleans/host/grain-directory">distributed directory</a> and lookups to the directory are cached for performance.</p>
+<p><a href="https://learn.microsoft.com/dotnet/orleans/grains/grain-placement#resource-optimized-placement"><strong>Resource-optimized placement</strong></a> was implemented by <a href="https://github.com/ledjon-behluli">&#64;ledjon-behluli</a> in <a href="https://github.com/dotnet/orleans/pull/8815">#8815</a>. Resource-optimized placement uses runtime statistics such as total and available memory, CPU usage, and grain count, collected from all hosts in the cluster, smooths them, and combines them to calculate a load score. It selects the least-loaded silo from a subset of hosts to balance load evenly across the cluster<a id="fnref:1" href="#fn:1" class="footnote-ref"><sup>1</sup></a>. If the load score of the local silo is within some configured range of the best candidate's load score, the local silo is chosen preferentially. This improves grain locality by leveraging the knowledge that the local silo initiated a call to the grain and therefore has some relation to that grain.
+Ledjon wrote more about Resource-optimized placement in <a href="https://www.ledjonbehluli.com/posts/orleans_resource_placement_kalman/">this blog post</a>.</p>
+<p>Originally, there was no straightforward way to move an active grain from one host to another without needing to fully deactivate the grain, unregister it from the grain directory, contend with concurrent callers on where to place the new activation, and reload its state from the database when the new activation is created. <a href="https://github.com/dotnet/orleans/pull/8452"><strong>Live grain migration</strong> was introduced in #8452</a>, allowing grains to transparently migrate from one silo to another on-demand without needing to reload state from the database, and without affecting pending requests. <strong>Live grain migration</strong> introduced two new lifecycle stages: <em>dehydration</em> and <em>rehydration</em>. The grain's in-memory state (application state, enqueued messages, metadata) is dehydrated into a migration packet which is sent to the destination silo where it's rehydrated. Live grain migration provided the mechanism for grains to migrate across hosts, but did not provide any out-of-the-box policies to automate migration. Users trigger grain migration by calling <code>this.MigrateOnIdle()</code> from within a grain, optionally providing a placement hint which the grain's configured placement director can use to select a destination host for the grain activation.</p>
+<p>Finally, we have the pieces in place for <strong>activation repartitioning</strong>: grain activations are load-balanced across the cluster, and they are able to migrate from host to host quickly. While <strong>live grain migration</strong> gives developers a mechanism to migrate grain activations from one host to another, it does not provide any automated <em>policy</em> to do so. Remember, we want grains to be balanced across the cluster and collocated with related grains to reduce networking and serialization cost. This is a difficult challenge since:</p>
+<ul>
+<li>An application can have millions of in-memory grains spread across tens or hundreds of silos.</li>
+<li>Each grain can message any other grain.</li>
+<li>The set of grains which each grain communicates with can change from minute to minute. For example, in an online game, player grains may join one match and communicate with each other for some time and then join a different match with an entirely different set of players afterwards.</li>
+<li>Computing the <a href="https://en.wikipedia.org/wiki/Minimum_cut">minimum edge-cut</a> for an arbitrary graph is <a href="https://en.wikipedia.org/wiki/NP-hardness">NP-hard</a>.</li>
+<li>No single host has full knowledge of which grains are hosted on which other host and which grains they communicate with: the graph is distributed across the cluster and changes dynamically.</li>
+<li>Storing the entire communication graph in memory could be prohibitively expensive.</li>
+</ul>
+<p>Folks at Microsoft Research studied this problem and proposed a solution in a paper titled <a href="https://www.microsoft.com/research/publication/optimizing-distributed-actor-systems-for-dynamic-interactive-services/">Optimizing Distributed Actor Systems for Dynamic Interactive Services</a>. The paper, dubbed <em>ActOp</em>, proposes a decentralized approximate solution which achieves good results in their benchmarks. Their implementation was never merged into Orleans and we were unable to find the original implementation on Microsoft's internal network. So, after first implementing <strong>resource-optimized placement</strong>, community contributor <a href="https://github.com/ledjon-behluli">&#64;ledjon-behluli</a> set out to implement <strong>activation repartitioning</strong> from scratch based on the ActOp paper. The following paragraphs describe the algorithm and the enhancements we made along the way.</p>
+<p>The <strong>activation repartitioning</strong> algorithm involves pair-wise exchange of grains between two hosts at a time. Silos compute a candidate set of grains to send to a peer, then the peer does similarly, and uses a greedy algorithm to determine a final exchange set which minimizes cost while keeping silos balanced.</p>
+<p>To compute the candidate sets, silos track which grains communicate with which other grains and how frequently. The whole graph would be unwieldy, so we only maintain the top-K communication edges using a variant of the <em>Space-Saving</em><a id="fnref:2" href="#fn:2" class="footnote-ref"><sup>2</sup></a> algorithm. Messages are sampled via a <a href="https://github.com/dotnet/orleans/blob/92e0bf37048cd8e6c728fba008fd4cfbbd647435/src/Orleans.Runtime/Utilities/StripedMpscBuffer.cs">multi-producer, single consumer ring buffer</a> which drops messages if the partition is full. They are then processed by a single thread, which yields frequently to give other threads CPU time. When the distribution has low skew and the K parameter is fairly small, <em>Space-Saving</em> can require a lot of costly shuffling at the bottom of its max-heap (we use the heap variant to reduce memory). To address this, we use <em>Filtered Space-Saving</em><a id="fnref:3" href="#fn:3" class="footnote-ref"><sup>3</sup></a> instead of <em>Space-Saving</em>. <em>Filtered Space-Saving</em> involves putting a 'sketch' data structure at the bottom of the max heap for the lower end of the distribution, which can greatly reduce churn at the bottom and improve performance by up to ~2x in our tests.</p>
+<p>If the top-K communication edges are all internal (eg, because the algorithm has already optimized partitioning somewhat), silos won't find many good transfer candidates. We need to track internal edges to work out which grains should/shouldn't be transferred (cost vs benefit). To address this, we introduced a bloom filter to track grains where the cost of movement is greater than the benefit, removing them from the top-K data structure. From our experiments, this works very well with even a 10x smaller <em>K</em>. This performance improvement will come with a reduced ability to handle dynamic graphs, so in the future we may need to implement a decay strategy to address this as the bloom filter becomes saturated. To improve lookup performance, <a href="https://github.com/ledjon-behluli">&#64;ledjon-behluli</a> implemented a <a href="https://github.com/dotnet/orleans/blob/92e0bf37048cd8e6c728fba008fd4cfbbd647435/src/Orleans.Runtime/Placement/Repartitioning/BlockedBloomFilter.cs">blocked bloom filter</a><a id="fnref:4" href="#fn:4" class="footnote-ref"><sup>4</sup></a>, which is used instead of a classic bloom filter.</p>
+<h3 id="enhancements-to-grain-timers">Enhancements to grain timers</h3>
+<p>Orleans v8.2.0 introduces a new API, <code>RegisterGrainTimer</code>, for managing <a href="https://learn.microsoft.com/dotnet/orleans/grains/timers-and-reminders#timers">grain timers</a>. For compatibility, the existing <code>RegisterTimer</code> API is still available, but it is marked <code>[Obsolete]</code> and developers should migrate to the new grain timer API, <code>RegisterGrainTimer</code>.</p>
+<p>Grain timers have been a common source of confusion for new and experienced developers because grain timer callbacks can execute concurrently with other grain calls, rather than being executed one-by-one like grain calls are. That is, timer callbacks are <em>interleaving</em>. With v8.2.0, this issue can be avoided by using the new <code>RegisterGrainTimer</code> API. The new API has the following advantages:</p>
+<ul>
+<li>Grain timers can be updated using the <code>Change(TimeSpan, TimeSpan)</code> method on the returned <code>IGrainTimer</code> instance.</li>
+<li>Callbacks do not interleave by default. Interleaving can be enabled by setting <code>Interleave</code> to <code>true</code> on <code>GrainTimerCreationOptions</code>.</li>
+<li>Callbacks can keep the grain active, preventing it from being collected if the timer period is relatively short. This can be enabled by setting <code>KeepAlive</code> to <code>true</code> on <code>GrainTimerCreationOptions</code>.</li>
+<li>Callbacks can receive a <code>CancellationToken</code> which is canceled when the timer is disposed or the grain starts to deactivate.</li>
+<li>Callbacks can dispose the grain timer which fired them.</li>
+<li>Callbacks are now subject to grain call filters.</li>
+<li>Callbacks are visible in distributed tracing, when distributed tracing is enabled.</li>
+<li>POCO grains (grain classes which do not inherit from <code>Grain</code>) can register grain timers using the <code>RegisterGrainTimer</code> extension method.</li>
+</ul>
+<p>The core API is as-follows:</p>
+<pre><code class="language-csharp">public static IGrainTimer RegisterGrainTimer&lt;TState&gt;(this IGrainBase grain, Func&lt;TState, CancellationToken, Task&gt; callback, TState state, GrainTimerCreationOptions options);
+</code></pre>
+<p>There are various overloads for convenience:</p>
+<pre><code class="language-csharp">public static IGrainTimer RegisterGrainTimer&lt;TState&gt;(this IGrainBase grain, Func&lt;TState, CancellationToken, Task&gt; callback, TState state, GrainTimerCreationOptions options);
+public static IGrainTimer RegisterGrainTimer(this IGrainBase grain, Func&lt;CancellationToken, Task&gt; callback, GrainTimerCreationOptions options);
+public static IGrainTimer RegisterGrainTimer(this IGrainBase grain, Func&lt;Task&gt; callback, GrainTimerCreationOptions options);
+public static IGrainTimer RegisterGrainTimer&lt;TState&gt;(this IGrainBase grain, Func&lt;TState, Task&gt; callback, TState state, GrainTimerCreationOptions options);
+public static IGrainTimer RegisterGrainTimer(this IGrainBase grain, Func&lt;Task&gt; callback, TimeSpan dueTime, TimeSpan period);
+public static IGrainTimer RegisterGrainTimer(this IGrainBase grain, Func&lt;CancellationToken, Task&gt; callback, TimeSpan dueTime, TimeSpan period);
+public static IGrainTimer RegisterGrainTimer&lt;TState&gt;(this IGrainBase grain, Func&lt;TState, Task&gt; callback, TState state, TimeSpan dueTime, TimeSpan period);
+public static IGrainTimer RegisterGrainTimer&lt;TState&gt;(this IGrainBase grain, Func&lt;TState, CancellationToken, Task&gt; callback, TState state, TimeSpan dueTime, TimeSpan period);
+</code></pre>
+<p>The <code>RegisterGrainTimer</code> API returns instances of <code>IGrainTimer</code> instead of <code>IDisposable</code>:</p>
+<pre><code class="language-csharp">/// &lt;summary&gt;
+/// Represents a timer belonging to a grain.
+/// &lt;/summary&gt;
+public interface IGrainTimer : IDisposable
+{
+    /// &lt;summary&gt;Changes the start time and the interval between method invocations for a timer, using &lt;see cref=&quot;TimeSpan&quot;/&gt; values to measure time intervals.&lt;/summary&gt;
+    /// &lt;param name=&quot;dueTime&quot;&gt;
+    /// A &lt;see cref=&quot;TimeSpan&quot;/&gt; representing the amount of time to delay before invoking the callback method specified when the &lt;see cref=&quot;IGrainTimer&quot;/&gt; was constructed.
+    /// Specify &lt;see cref=&quot;Timeout.InfiniteTimeSpan&quot;/&gt; to prevent the timer from restarting.
+    /// Specify &lt;see cref=&quot;TimeSpan.Zero&quot;/&gt; to restart the timer immediately.
+    /// &lt;/param&gt;
+    /// &lt;param name=&quot;period&quot;&gt;
+    /// The time interval between invocations of the callback method specified when the timer was constructed.
+    /// Specify &lt;see cref=&quot;Timeout.InfiniteTimeSpan&quot;/&gt; to disable periodic signaling.
+    /// &lt;/param&gt;
+    /// &lt;exception cref=&quot;ArgumentOutOfRangeException&quot;&gt;The &lt;paramref name=&quot;dueTime&quot;/&gt; or &lt;paramref name=&quot;period&quot;/&gt; parameter, in milliseconds, is less than -1 or greater than 4294967294.&lt;/exception&gt;
+    void Change(TimeSpan dueTime, TimeSpan period);
+}
+</code></pre>
+<h3 id="messagepack-serialization-support">MessagePack serialization support</h3>
+<p>&#64;n-sidorov implemented support for serializing messages using <a href="https://github.com/MessagePack-CSharp/MessagePack-CSharp">MessagePack</a>.</p>
+<p>To use MessagePack for message serialization, you will need to install <code>Microsoft.Orleans.Serialization.MessagePack</code> by inserting the following into your project files:</p>
+<pre><code class="language-xml">&lt;ItemGroup&gt;
+  &lt;PackageReference Include=&quot;Microsoft.Orleans.Serialization.MessagePack&quot; Version=&quot;8.2.0&quot; /&gt;
+&lt;/ItemGroup&gt;
+</code></pre>
+<p>Enable MessagePack serialization by calling <code>ISerializerBuilder.AddMessagePackSerializer()</code> on your clients and silos:</p>
+<pre><code class="language-csharp">builder.AddSerializer(serializer =&gt; serializer.AddMessagePackSerializer());
+</code></pre>
+<p>Upon doing so, Orleans will be able to serialize types with the <code>[MessagePackObject]</code> attribute, for example:</p>
+<pre><code class="language-csharp">[MessagePackObject]
+public sealed record MyMessagePackClass
+{
+    [Key(0)]
+    public int IntProperty { get; init; }
+
+    [Key(1)]
+    public string StringProperty { get; init; }
+
+    [Key(2)]
+    public MyMessagePackSubClass SubClass { get; init; }
+}
+</code></pre>
+<h3 id="cassandra-clustering-provider">Cassandra clustering provider</h3>
+<p>&#64;rkargMsft implemented support for using Cassandra as a backing store for clustering in <a href="https://github.com/dotnet/orleans/pull/8925">https://github.com/dotnet/orleans/pull/8925</a>.</p>
+<p>To use Cassandra for clustering, you will need to install <code>Microsoft.Orleans.Clustering.Cassandra</code> by inserting the following into your project files:</p>
+<pre><code class="language-xml">&lt;ItemGroup&gt;
+  &lt;PackageReference Include=&quot;Microsoft.Orleans.Clustering.Cassandra&quot; Version=&quot;8.2.0&quot; /&gt;
+&lt;/ItemGroup&gt;
+</code></pre>
+<p>On your clients and silos, you can enable Cassandra clustering by calling:</p>
+<pre><code class="language-csharp">builder.UseCassandraClustering(connectionString);
+</code></pre>
+<h3 id="ado.net-streaming-provider-alpha">ADO.NET Streaming Provider (alpha)</h3>
+<p>&#64;JorgeCandeias implemented an ADO.NET streams provider in <a href="https://github.com/dotnet/orleans/pull/8974">https://github.com/dotnet/orleans/pull/8974</a>.</p>
+<p>ADO.NET streaming is currently an <em>alpha</em> version. You can add it to your project files like so:</p>
+<pre><code class="language-xml">&lt;ItemGroup&gt;
+  &lt;PackageReference Include=&quot;Microsoft.Orleans.Streaming.AdoNet&quot; Version=&quot;8.2.0-alpha.1&quot; /&gt;
+&lt;/ItemGroup&gt;
+</code></pre>
+<p>Configure ADO.NET streaming like so:</p>
+<pre><code class="language-csharp">builder.AddAdoNetStreams(&quot;provider name&quot;, options =&gt;
+{
+    options.Invariant = &quot;ADO.NET invariant name&quot;;
+    options.ConnectionString = &quot;Connection string&quot;;
+});
+</code></pre>
+<h2 id="whats-changed">What's Changed</h2>
+<ul>
+<li>Fix potential grain timer deadlock during disposal by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/8950">https://github.com/dotnet/orleans/pull/8950</a></li>
+<li>Add missing description node to XML docs by &#64;scottaddie in <a href="https://github.com/dotnet/orleans/pull/8959">https://github.com/dotnet/orleans/pull/8959</a></li>
+<li>Clean up <code>SafeTimer</code> usage, replace with <code>PeriodicTimer</code> where possible by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/8953">https://github.com/dotnet/orleans/pull/8953</a></li>
+<li>Fix capitalization of 'MachineName' structured logging parameter by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/8980">https://github.com/dotnet/orleans/pull/8980</a></li>
+<li>Ensure PeriodicTimer period &gt;= 1ms by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/8981">https://github.com/dotnet/orleans/pull/8981</a></li>
+<li>Ensure reminder table is initialized before access by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/8982">https://github.com/dotnet/orleans/pull/8982</a></li>
+<li>Update Npgsql by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/8994">https://github.com/dotnet/orleans/pull/8994</a></li>
+<li>Fix serialization of types inheriting from <code>Dictionary&lt;K,V&gt;</code> which add values in their constructor by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/8993">https://github.com/dotnet/orleans/pull/8993</a></li>
+<li>Prevent generated types from appearing in IDE by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/8987">https://github.com/dotnet/orleans/pull/8987</a></li>
+<li>Use dotnet-public instead of nuget.org by &#64;benjaminpetit in <a href="https://github.com/dotnet/orleans/pull/8931">https://github.com/dotnet/orleans/pull/8931</a></li>
+<li>Add Orleans.Runtime to implicit usings by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/8996">https://github.com/dotnet/orleans/pull/8996</a></li>
+<li>Stop watchdog when container is disposed by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/8998">https://github.com/dotnet/orleans/pull/8998</a></li>
+<li>Stop silo on Dispose by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9000">https://github.com/dotnet/orleans/pull/9000</a></li>
+<li>Dispose all activations when host is disposed by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9001">https://github.com/dotnet/orleans/pull/9001</a></li>
+<li>Dispose cluster &amp; silo health monitors are disposed when host is disposed, and clean up code by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/8999">https://github.com/dotnet/orleans/pull/8999</a></li>
+<li>Unsubscribe <code>ConsistentRingProvider</code> &amp; <code>VirtualBucketsRingProvider</code> from <code>ISiloStatusOracle</code> on shutdown by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/8997">https://github.com/dotnet/orleans/pull/8997</a></li>
+<li>Avoid unnecessary <code>Interlocked.Or</code> in <code>SingleWaiterAutoResetEvent</code> by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9003">https://github.com/dotnet/orleans/pull/9003</a></li>
+<li>test(codegen): add derived from list by &#64;claylaut in <a href="https://github.com/dotnet/orleans/pull/8858">https://github.com/dotnet/orleans/pull/8858</a></li>
+<li>Add serialization support for types derived from <code>List&lt;T&gt;</code> and <code>HashSet&lt;T&gt;</code> by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9005">https://github.com/dotnet/orleans/pull/9005</a></li>
+<li>Use <code>PeriodicTimer</code> instead of <code>GrainTimer</code> in <code>LeaseBasedQueueBalancer</code> by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9002">https://github.com/dotnet/orleans/pull/9002</a></li>
+<li>Updatable grain timers by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/8954">https://github.com/dotnet/orleans/pull/8954</a></li>
+<li>Fix streaming config validator registration by &#64;benjaminpetit in <a href="https://github.com/dotnet/orleans/pull/8876">https://github.com/dotnet/orleans/pull/8876</a></li>
+<li>Update samples README.md to point to samples repo &amp; explorer by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9010">https://github.com/dotnet/orleans/pull/9010</a></li>
+<li>[CodeGen] Always specify grain extension interface for grain extension calls by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9009">https://github.com/dotnet/orleans/pull/9009</a></li>
+<li>Fix silo shutdown logging when silo is already shutting down. by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9013">https://github.com/dotnet/orleans/pull/9013</a></li>
+<li>Fix perf of PooledBufferTests by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9015">https://github.com/dotnet/orleans/pull/9015</a></li>
+<li>Fix termination condition in ActivationMigrationManager.AcceptMigratingGrains by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9017">https://github.com/dotnet/orleans/pull/9017</a></li>
+<li>Improve <code>ActivationData</code> shutdown process by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9018">https://github.com/dotnet/orleans/pull/9018</a></li>
+<li>Exclude explicitly implemented interface methods from proxy by &#64;alrz in <a href="https://github.com/dotnet/orleans/pull/8992">https://github.com/dotnet/orleans/pull/8992</a></li>
+<li>Consider interface method accessibility when generating the invoker by &#64;alrz in <a href="https://github.com/dotnet/orleans/pull/9019">https://github.com/dotnet/orleans/pull/9019</a></li>
+<li>ADO.NET Streaming Provider by &#64;JorgeCandeias in <a href="https://github.com/dotnet/orleans/pull/8974">https://github.com/dotnet/orleans/pull/8974</a></li>
+<li>Brings back support for <code>StringData</code> in ATS provider by &#64;ledjon-behluli in <a href="https://github.com/dotnet/orleans/pull/8965">https://github.com/dotnet/orleans/pull/8965</a></li>
+<li>Avoid changing soon-to-be-deprecated RegisterTimer method return type by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9020">https://github.com/dotnet/orleans/pull/9020</a></li>
+<li>Mark Orleans.Streaming.AdoNet as alpha by &#64;benjaminpetit in <a href="https://github.com/dotnet/orleans/pull/9022">https://github.com/dotnet/orleans/pull/9022</a></li>
+<li>Use Entra ID auth in Azure tests when possible by &#64;benjaminpetit in <a href="https://github.com/dotnet/orleans/pull/9027">https://github.com/dotnet/orleans/pull/9027</a></li>
+<li>Update Microsoft.Build dependency by &#64;benjaminpetit in <a href="https://github.com/dotnet/orleans/pull/9029">https://github.com/dotnet/orleans/pull/9029</a></li>
+<li>Added  #pragma warning disable  CS1591 to supress warnings in the source generated code by &#64;m3nax in <a href="https://github.com/dotnet/orleans/pull/8940">https://github.com/dotnet/orleans/pull/8940</a></li>
+<li>ResourceOptimizedPlacement: normalize <code>MaxAvailableMemory</code>, add <code>ActivationCount</code> factor by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9028">https://github.com/dotnet/orleans/pull/9028</a></li>
+<li>Add support to JSON codecs to serialize their generic JSON types by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9033">https://github.com/dotnet/orleans/pull/9033</a></li>
+<li>Remove Orleans.Streaming.GCP by &#64;benjaminpetit in <a href="https://github.com/dotnet/orleans/pull/9031">https://github.com/dotnet/orleans/pull/9031</a></li>
+<li>Allow custom back-off providers for <code>PersistentStreamPullingAgent</code> by &#64;ledjon-behluli in <a href="https://github.com/dotnet/orleans/pull/9035">https://github.com/dotnet/orleans/pull/9035</a></li>
+<li>Fix nightly package publishing NuGet path by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9040">https://github.com/dotnet/orleans/pull/9040</a></li>
+<li>Adds support to use <code>MayInterleave</code> with <code>StatelessWorker</code> grains by &#64;ledjon-behluli in <a href="https://github.com/dotnet/orleans/pull/9050">https://github.com/dotnet/orleans/pull/9050</a></li>
+<li>Avoid logging error monitoring k8s pods on restart by &#64;gp-jorge in <a href="https://github.com/dotnet/orleans/pull/9048">https://github.com/dotnet/orleans/pull/9048</a></li>
+<li>Non-reentrant grain timers by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/8955">https://github.com/dotnet/orleans/pull/8955</a></li>
+<li>Activation Repartitioning by &#64;ledjon-behluli in <a href="https://github.com/dotnet/orleans/pull/8877">https://github.com/dotnet/orleans/pull/8877</a></li>
+<li>Fix leaking timed-out callbacks in InsideRuntimeClient by &#64;krasin-ga in <a href="https://github.com/dotnet/orleans/pull/9041">https://github.com/dotnet/orleans/pull/9041</a></li>
+<li>Fix table storage Reminders and GrainDirectory providers registration by &#64;Costo in <a href="https://github.com/dotnet/orleans/pull/9045">https://github.com/dotnet/orleans/pull/9045</a></li>
+<li>Adding codec to serialize F# Unit by &#64;gfix in <a href="https://github.com/dotnet/orleans/pull/9039">https://github.com/dotnet/orleans/pull/9039</a></li>
+<li>Cassandra Clustering implementation by &#64;rkargMsft in <a href="https://github.com/dotnet/orleans/pull/8925">https://github.com/dotnet/orleans/pull/8925</a></li>
+<li>Fix for Recorded flag not propagated between activities by &#64;Costo in <a href="https://github.com/dotnet/orleans/pull/9016">https://github.com/dotnet/orleans/pull/9016</a></li>
+<li>Support implementing multiple IConverter&lt;,&gt; in single converter class by &#64;ccorsano in <a href="https://github.com/dotnet/orleans/pull/8881">https://github.com/dotnet/orleans/pull/8881</a></li>
+<li>[Orleans.EventSourcing] Fix double-increment in <code>RemoveStaleConditionalUpdates</code> by &#64;zbarrier in <a href="https://github.com/dotnet/orleans/pull/8623">https://github.com/dotnet/orleans/pull/8623</a></li>
+<li>Fix flaky Activation Repartitioning test by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9058">https://github.com/dotnet/orleans/pull/9058</a></li>
+<li>Implement incoming grain call filters for observers by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9054">https://github.com/dotnet/orleans/pull/9054</a></li>
+<li>Activation repartitioner: use <code>null</code> for no-op message observer to avoid interface call by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9056">https://github.com/dotnet/orleans/pull/9056</a></li>
+<li>MessagePack codec  by &#64;n-sidorov in <a href="https://github.com/dotnet/orleans/pull/8546">https://github.com/dotnet/orleans/pull/8546</a></li>
+<li>Replace custom <code>GetHashCode</code> implementations with <code>HashCode.Combine</code> by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9059">https://github.com/dotnet/orleans/pull/9059</a></li>
+<li>Coordinate shutdown of AdaptiveDirectoryCacheMaintainer with LocalGrainDirectory by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9061">https://github.com/dotnet/orleans/pull/9061</a></li>
+<li>Promptly terminate AdaptiveDirectoryCacheMaintainer by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9062">https://github.com/dotnet/orleans/pull/9062</a></li>
+<li>ActivationData: get IGrainActivator from shared components consistently by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9063">https://github.com/dotnet/orleans/pull/9063</a></li>
+<li>StatelessWorker: pump work item queue consistently by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9064">https://github.com/dotnet/orleans/pull/9064</a></li>
+<li>Allow GrainTimers to dispose themselves from their own callback by &#64;ReubenBond in <a href="https://github.com/dotnet/orleans/pull/9065">https://github.com/dotnet/orleans/pull/9065</a></li>
+</ul>
+<h2 id="new-contributors">New Contributors</h2>
+<ul>
+<li>&#64;scottaddie made their first contribution in <a href="https://github.com/dotnet/orleans/pull/8959">https://github.com/dotnet/orleans/pull/8959</a></li>
+<li>&#64;alrz made their first contribution in <a href="https://github.com/dotnet/orleans/pull/8992">https://github.com/dotnet/orleans/pull/8992</a></li>
+<li>&#64;gp-jorge made their first contribution in <a href="https://github.com/dotnet/orleans/pull/9048">https://github.com/dotnet/orleans/pull/9048</a></li>
+<li>&#64;krasin-ga made their first contribution in <a href="https://github.com/dotnet/orleans/pull/9041">https://github.com/dotnet/orleans/pull/9041</a></li>
+<li>&#64;rkargMsft made their first contribution in <a href="https://github.com/dotnet/orleans/pull/8925">https://github.com/dotnet/orleans/pull/8925</a></li>
+<li>&#64;ccorsano made their first contribution in <a href="https://github.com/dotnet/orleans/pull/8881">https://github.com/dotnet/orleans/pull/8881</a></li>
+<li>&#64;zbarrier made their first contribution in <a href="https://github.com/dotnet/orleans/pull/8623">https://github.com/dotnet/orleans/pull/8623</a></li>
+<li>&#64;n-sidorov made their first contribution in <a href="https://github.com/dotnet/orleans/pull/8546">https://github.com/dotnet/orleans/pull/8546</a></li>
+</ul>
+<p><strong>Full Changelog</strong>: <a href="https://github.com/dotnet/orleans/compare/v8.1.0...v8.2.0">https://github.com/dotnet/orleans/compare/v8.1.0...v8.2.0</a></p>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn:1">
+<p><a href="https://www.eecs.harvard.edu/%7Emichaelm/postscripts/mythesis.pdf">The Power of Two Choices in Randomized Load Balancing by Michael David Mitzenmacher</a><a href="#fnref:1" class="footnote-back-ref">&#8617;</a></p>
+</li>
+<li id="fn:2">
+<p><a href="https://www.cs.emory.edu/%7Echeung/Courses/585/Syllabus/papers/Frequency-count/2005-Metwally-Top-k-elements.pdf"><em>Efficient Computation of Frequent and Top-k Elements in Data Streams</em> by Metwally, Agrawal, and Abbadi</a><a href="#fnref:2" class="footnote-back-ref">&#8617;</a></p>
+</li>
+<li id="fn:3">
+<p><a href="https://www.hlt.inesc-id.pt/%7Efmmb/references/misnis.ref0a.pdf"><em>Finding top-k elements in data streams</em> by Nuno Homem &amp; Joao Paulo Carvalho</a><a href="#fnref:3" class="footnote-back-ref">&#8617;</a></p>
+</li>
+<li id="fn:4">
+<p><a href="https://www.cs.amherst.edu/%7Eccmcgeoch/cs34/papers/cacheefficientbloomfilters-jea.pdf"><em>Cache-, Hash- and Space-Efficient Bloom Filters</em> by Felix Putze, Peter Sanders and Johannes Single</a><a href="#fnref:4" class="footnote-back-ref">&#8617;</a></p>
+</li>
+</ol>
+</div>
+
+                                </div>
+                        </div>
+                </div>
+                
+                <hr>
+                
+                <!-- Footer -->
+                <footer>
+                        <div class="container">
+        <div class="row">
+                <div class="col-md-12 text-center">
+                    <p class="copyright text-muted">
+                        Copyright © 2024
+                        <br />
+                            <a href="/feed.rss"><i class="fa fa-rss"></i> RSS Feed</a>
+                        |
+                            <a href="/feed.atom"><i class="fa fa-rss"></i> Atom Feed</a>
+                        <br />
+                        <strong><a href="https://wyam.io">Generated by Wyam</a></strong>
+                    </p>
+                </div>
+        </div>
+</div>
+
+                </footer> 
+
+                <script src="/assets/js/jquery.min.js"></script>
+                <script src="/assets/js/bootstrap.min.js"></script>     
+                <script src="/assets/js/highlight.pack.js"></script>   
+                <script src="/assets/js/clean-blog.js"></script>
+                <script src="/assets/js/d3.v3.min.js"></script>
+                <script src="/assets/js/trianglify.min.js"></script>
+                <script src="/assets/js/Please-compressed.js"></script>
+                <script src="/assets/js/background-check.min.js"></script>
+
+                <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+                <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+                <!--[if lt IE 9]>
+                        <script src="/assets/js/html5shiv.js"></script>
+                        <script src="/assets/js/respond.min.js"></script>
+                <![endif]-->
+                
+                
+                <script>hljs.initHighlightingOnLoad();</script>
+
+
+                <script>
+                        BackgroundCheck.init({
+                                targets: '.intro-header,.navbar',
+                                images: '.intro-header'
+                        });
+                </script>
+        </body>
+</html>
+
