@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://reubenbond.github.io/sitemap-index.xml
