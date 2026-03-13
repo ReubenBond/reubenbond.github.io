@@ -344,15 +344,6 @@ In non-fast rounds, this same functionality serves to make <code>accept</code> r
 <h3 id="register-initialization"><a href="#register-initialization">Register initialization</a></h3>
 <p>To allow proposers to initialize a register in 1 RTT, they start with the <code>accept</code> phase for the initial fast round, <code>(1, 0)</code>. This way, either they can have their initial value committed if there is no contention, or they will learn of the conflicting ballot and can retry at the <code>prepare</code> phase. Acceptors are initialized with a promised ballot of <code>(1, 0)</code>.</p>
 <h2 id="the-protocol"><a href="#the-protocol">The protocol</a></h2>
-<p>At a high level, each operation follows this pattern:</p>
-<ol>
-<li>A proposer first tries the shared fast ballot <code>(r, 0)</code>, so it can send <code>accept</code> directly to acceptors without first taking exclusive ownership of the round.</li>
-<li>If a fast quorum accepts the same value, that value commits in 1 RTT. The <code>accept</code> can piggyback a <code>prepare</code> for the next ballot so the following operation can also skip a standalone <code>prepare</code>.</li>
-<li>If the fast round splits between conflicting values, a proposer falls back to a proposer-owned classic ballot <code>(r', proposerId)</code>, runs <code>prepare</code>, recovers the fast-round winner by counting votes for the highest fast ballot, and then commits with a classic quorum.</li>
-<li>After a successful accept, the proposer can piggyback either the next shared fast ballot <code>(r + 1, 0)</code> to stay leaderless or the next same-proposer classic ballot <code>(r + 1, proposerId)</code> to stay leadered.</li>
-</ol>
-<p>Both the Fast Paxos optimization and the distinguished proposer optimization use the same mechanism: piggybacking a <code>prepare</code> request onto each <code>accept</code> request. The only difference is the choice of <code>proposerId</code> in the piggybacked ballot. This makes dynamically switching between leadered and leaderless consensus a runtime decision at the proposer, while preserving 1 RTT commits in either mode.</p>
-<p>The pseudocode below spells out that flow.</p>
 <p>This version is intentionally simplified to show the core protocol only. It omits implementation details like duplicate-message handling, cached local views, and early-stop bookkeeping.</p>
 <p>Notation:</p>
 <ul>
