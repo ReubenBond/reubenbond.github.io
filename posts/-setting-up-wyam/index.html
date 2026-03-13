@@ -1,0 +1,105 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="generator" content="Astro v6.0.4"><link rel="icon" href="/favicon.ico"><link rel="canonical" href="https://reubenbond.github.io/posts/-setting-up-wyam"><link rel="alternate" type="application/rss+xml" title="reublog" href="https://reubenbond.github.io/feed.rss"><link rel="alternate" type="application/atom+xml" title="reublog" href="https://reubenbond.github.io/feed.atom"><link rel="sitemap" href="https://reubenbond.github.io/sitemap.xml"><title>Deploying Wyam To GitHub Using Visual Studio Online - reublog</title><meta name="title" content="Deploying Wyam To GitHub Using Visual Studio Online - reublog"><meta name="description" content="Here goes nothing! This blog is built with Dave Glick's Wyam static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages. Here's how to set up something similar."><meta property="og:type" content="website"><meta property="og:url" content="https://reubenbond.github.io/posts/-setting-up-wyam"><meta property="og:title" content="Deploying Wyam To GitHub Using Visual Studio Online - reublog"><meta property="og:description" content="Here goes nothing! This blog is built with Dave Glick's Wyam static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages. Here's how to set up something similar."><meta property="og:image" content="https://reubenbond.github.io/images/header.jpg"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Deploying Wyam To GitHub Using Visual Studio Online - reublog"><meta name="twitter:description" content="Here goes nothing! This blog is built with Dave Glick's Wyam static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages. Here's how to set up something similar."><meta name="twitter:image" content="https://reubenbond.github.io/images/header.jpg"><link rel="stylesheet" href="/_astro/SiteLayout.BtvCCHss.css"></head> <body> <header class="site-header"> <div class="nav-shell"> <a class="brand" href="/">reublog</a> <nav class="nav-links" aria-label="Primary"> <a class="nav-link active" href="/posts"> Archive </a><a class="nav-link" href="/tags"> Tags </a><a class="nav-link" href="/drafts/orleans-v8.2.0"> Orleans V8 </a> </nav> </div> </header> <main> <section class="hero" style="background-image: linear-gradient(180deg, rgba(8, 8, 8, 0.18), rgba(8, 8, 8, 0.92)), url('/images/header.jpg');"> <div class="hero-inner"> <h1>Deploying Wyam To GitHub Using Visual Studio Online</h1>  </div> </section> <section class="content-shell">  <div class="post-meta">  <span class="muted">
+Published <time datetime="2017-10-03T00:00:00.000Z">Tuesday, October 3, 2017</time> </span> </div> <article class="prose">  <p>Here goes nothing! This blog is built with <a href="https://twitter.com/daveaglick">Dave Glick’s</a> <a href="https://wyam.io/">Wyam</a> static site generator and deployed from a git repo in Visual Studio Online to GitHub Pages. Here’s how to set up something similar.</p>
+<h1 id="prerequisites">Prerequisites</h1>
+<ul>
+<li>A Visual Studio Online repository for your blog source.
+<ul>
+<li>You could have also VSO pull the source from GitHub or somewhere else instead, but I haven’t covered that here.</li>
+</ul>
+</li>
+<li>A GitHub repository which will serve the compiled output via GitHub Pages.
+<ul>
+<li>I created a repository called <a href="https://github.com/ReubenBond/reubenbond.github.io"><code>reubenbond.github.io</code></a> under my profile, <a href="https://github.com/ReubenBond/"><code>ReubenBond</code></a>.</li>
+</ul>
+</li>
+<li>Cake so you can test it out locally. Install it via <a href="https://chocolatey.org/">Chocolatey</a>: <code>choco install cake.portable</code></li>
+</ul>
+<h1 id="kick-starting-wyam-with-cake">Kick-starting Wyam with Cake</h1>
+<p>Create a file called <code>build.cake</code> in the root of your repo with these contents:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="csharp"><code><span class="line"><span style="color:#E1E4E8">#tool nuget:?</span><span style="color:#F97583">package</span><span style="color:#9ECBFF">=Wyam</span></span>
+<span class="line"><span style="color:#E1E4E8">#addin nuget:?</span><span style="color:#F97583">package</span><span style="color:#9ECBFF">=Cake.Wyam</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">var</span><span style="color:#B392F0"> target</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> Argument</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"target"</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">"Default"</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">Task</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"Build"</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#E1E4E8">   .</span><span style="color:#B392F0">Does</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span></span>
+<span class="line"><span style="color:#E1E4E8">   {</span></span>
+<span class="line"><span style="color:#B392F0">       Wyam</span><span style="color:#E1E4E8">(</span><span style="color:#F97583">new</span><span style="color:#B392F0"> WyamSettings</span></span>
+<span class="line"><span style="color:#E1E4E8">       {</span></span>
+<span class="line"><span style="color:#E1E4E8">           Recipe </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "Blog"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">           Theme </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "CleanBlog"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">           UpdatePackages </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span></span>
+<span class="line"><span style="color:#E1E4E8">       });</span></span>
+<span class="line"><span style="color:#E1E4E8">   });</span></span>
+<span class="line"><span style="color:#E1E4E8">   </span></span>
+<span class="line"><span style="color:#B392F0">Task</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"Preview"</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#E1E4E8">   .</span><span style="color:#B392F0">Does</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span></span>
+<span class="line"><span style="color:#E1E4E8">   {</span></span>
+<span class="line"><span style="color:#B392F0">       Wyam</span><span style="color:#E1E4E8">(</span><span style="color:#F97583">new</span><span style="color:#B392F0"> WyamSettings</span></span>
+<span class="line"><span style="color:#E1E4E8">       {</span></span>
+<span class="line"><span style="color:#E1E4E8">           Recipe </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "Blog"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">           Theme </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "CleanBlog"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">           UpdatePackages </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">           Preview </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">           Watch </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span></span>
+<span class="line"><span style="color:#E1E4E8">       });        </span></span>
+<span class="line"><span style="color:#E1E4E8">   });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">Task</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"Default"</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#E1E4E8">   .</span><span style="color:#B392F0">IsDependentOn</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"Build"</span><span style="color:#E1E4E8">);    </span></span>
+<span class="line"><span style="color:#E1E4E8">   </span></span>
+<span class="line"><span style="color:#B392F0">RunTarget</span><span style="color:#E1E4E8">(target);</span></span></code></pre>
+<p>Add a file called <code>config.wyam</code> like so:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="csharp"><code><span class="line"><span style="color:#E1E4E8">#recipe Blog</span></span>
+<span class="line"><span style="color:#E1E4E8">#theme CleanBlog</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">Settings[Keys.Host] </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "yourname.github.io"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">Settings[BlogKeys.Title] </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "MegaBlog"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">Settings[BlogKeys.Description] </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "Blog of the Gods"</span><span style="color:#E1E4E8">;</span></span></code></pre>
+<p>Create a folder called <code>input</code> and add a folder called <code>posts</code> inside that.
+Now create <code>input/posts/fist-post.md</code>:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>Title: Fist Post! A song of fice and ire</span></span>
+<span class="line"><span>Published: 10/30/2017</span></span>
+<span class="line"><span>Tags: ['Fists']</span></span>
+<span class="line"><span>---</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>This post is about fists and how clumpy they always are.</span></span></code></pre>
+<p>Great! Try running it using Cake. Because Wyam targets an older version of Cake at the time of writing, I’m adding the <code>--settings_skipverification=true</code> option so that Cake doesn’t complain.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>cake --settings_skipverification=true -target=Preview</span></span></code></pre>
+<p>Open a browser to <a href="http://localhost:5080">http://localhost:5080</a> and see the results. The <code>Preview</code> target watches for file changes so it can automatically recompile &#x26; refresh your browser whenever you save changes.</p>
+<h1 id="automating-deployment">Automating Deployment</h1>
+<ol>
+<li>Install the <a href="https://marketplace.visualstudio.com/items?itemName=cake-build.cake">Cake build task from the Visual Studio Marketplace</a> into VSO.</li>
+<li>In Visual Studio Online, create a new, empty build for your repo, selecting an appropriate build agent.</li>
+<li>Add the Cake Build task.</li>
+<li>Select the <code>build.cake</code> file from the root of your repo as the <em>Cake Script</em>.</li>
+<li>Set the <em>Target</em> to <code>Default</code>.</li>
+<li>Optionally add the <code>--settings_skipverification=true</code> option to <em>Cake Arguments</em>.</li>
+<li>Add a new <em>PowerShell Script</em> build task, set <em>Type</em> to <code>Inline Script</code> and add these contents:</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="powershell"><code><span class="line"><span style="color:#F97583">param</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">  [</span><span style="color:#F97583">string</span><span style="color:#E1E4E8">]$Token</span><span style="color:#F97583">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  [</span><span style="color:#F97583">string</span><span style="color:#E1E4E8">]$UserName</span><span style="color:#F97583">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  [</span><span style="color:#F97583">string</span><span style="color:#E1E4E8">]$Repository</span></span>
+<span class="line"><span style="color:#E1E4E8">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">$localFolder </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "gh-pages"</span></span>
+<span class="line"><span style="color:#E1E4E8">$repo </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "https://</span><span style="color:#F97583">$</span><span style="color:#9ECBFF">(</span><span style="color:#E1E4E8">$UserName</span><span style="color:#9ECBFF">)</span><span style="color:#9ECBFF">:</span><span style="color:#F97583">$</span><span style="color:#9ECBFF">(</span><span style="color:#E1E4E8">$Token</span><span style="color:#9ECBFF">)</span><span style="color:#9ECBFF">@github.com/</span><span style="color:#F97583">$</span><span style="color:#9ECBFF">(</span><span style="color:#E1E4E8">$Repository</span><span style="color:#9ECBFF">)</span><span style="color:#9ECBFF">.git"</span></span>
+<span class="line"><span style="color:#E1E4E8">git clone $repo </span><span style="color:#F97583">--</span><span style="color:#E1E4E8">branch</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">master $localFolder</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#79B8FF">Copy-Item</span><span style="color:#9ECBFF"> "output\*"</span><span style="color:#E1E4E8"> $localFolder </span><span style="color:#F97583">-</span><span style="color:#E1E4E8">recurse</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#79B8FF">Set-Location</span><span style="color:#E1E4E8"> $localFolder</span></span>
+<span class="line"><span style="color:#E1E4E8">git add </span><span style="color:#F97583">*</span></span>
+<span class="line"><span style="color:#E1E4E8">git commit </span><span style="color:#F97583">-</span><span style="color:#E1E4E8">m </span><span style="color:#9ECBFF">"Update."</span></span>
+<span class="line"><span style="color:#E1E4E8">git push</span></span></code></pre>
+<ol start="8">
+<li>Create a new GitHub Personal Access token from GitHub’s Developer Settings page, or by <a href="https://github.com/settings/tokens/new">clicking here</a>. I added all of the <code>repo</code> permissions to the token.</li>
+<li>In VSO, add arguments for the script, replacing <code>TOKEN</code> with your token and replacing the other values as appropriate:</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>-Token TOKEN -UserName "ReubenBond" -Repository "ReubenBond/reubenbond.github.io"</span></span></code></pre>
+<ol start="10">
+<li>Up on the <em>Triggers</em> pane, enable Continuous Integration.</li>
+<li>Click <em>Save &#x26; queue</em>, then cross your fingers.</li>
+</ol>
+<p>Hopefully that’s it and you can now add new blog posts to the <code>input/posts</code> directory.</p>  </article> <section class="tag-section"> <h2 class="section-title">Tags</h2> <div class="tag-list"> <a class="tag-link" href="/tags/Wyam"> Wyam </a><a class="tag-link" href="/tags/Visual-Studio-Online"> Visual Studio Online </a><a class="tag-link" href="/tags/Blog"> Blog </a> </div> </section> </section> </main> <footer class="site-footer"> <div class="footer-shell"> <p>Copyright &copy; 2026</p> <div class="footer-links"> <a href="/feed.rss">RSS</a> <a href="/feed.atom">Atom</a> </div> </div> </footer> </body></html>

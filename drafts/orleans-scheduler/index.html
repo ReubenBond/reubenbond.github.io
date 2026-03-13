@@ -1,0 +1,26 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="generator" content="Astro v6.0.4"><link rel="icon" href="/favicon.ico"><link rel="canonical" href="https://reubenbond.github.io/drafts/orleans-scheduler"><link rel="alternate" type="application/rss+xml" title="reublog" href="https://reubenbond.github.io/feed.rss"><link rel="alternate" type="application/atom+xml" title="reublog" href="https://reubenbond.github.io/feed.atom"><link rel="sitemap" href="https://reubenbond.github.io/sitemap.xml"><title>The Orleans Scheduler - reublog</title><meta name="title" content="The Orleans Scheduler - reublog"><meta name="description" content="xxx"><meta property="og:type" content="website"><meta property="og:url" content="https://reubenbond.github.io/drafts/orleans-scheduler"><meta property="og:title" content="The Orleans Scheduler - reublog"><meta property="og:description" content="xxx"><meta property="og:image" content="https://reubenbond.github.io/xxx"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="The Orleans Scheduler - reublog"><meta name="twitter:description" content="xxx"><meta name="twitter:image" content="https://reubenbond.github.io/xxx"><link rel="stylesheet" href="/_astro/SiteLayout.BtvCCHss.css"></head> <body> <header class="site-header"> <div class="nav-shell"> <a class="brand" href="/">reublog</a> <nav class="nav-links" aria-label="Primary"> <a class="nav-link" href="/posts"> Archive </a><a class="nav-link" href="/tags"> Tags </a><a class="nav-link" href="/drafts/orleans-v8.2.0"> Orleans V8 </a> </nav> </div> </header> <main> <section class="hero" style="background-image: linear-gradient(180deg, rgba(8, 8, 8, 0.18), rgba(8, 8, 8, 0.92)), url('xxx');"> <div class="hero-inner"> <h1>The Orleans Scheduler</h1>  </div> </section> <section class="content-shell">  <div class="post-meta"> <span class="pill">Draft</span>  </div> <article class="prose">  <h1 id="interleaving">Interleaving</h1>
+<p>Each activation (instance of a grain) has its own <code>TaskScheduler</code> which ensures that any tasks spawned in that activation abide by the threading rules, namely that there is only a single thread executing in the context of an activation at any time. That’s not a technical limitation, it’s very much a design choice.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>// This method is marked [AlwaysInterleave] in the grain interface</span></span>
+<span class="line"><span>public Task&#x3C;string> PerformComputations()</span></span>
+<span class="line"><span>{</span></span>
+<span class="line"><span>    // No other code will execute on your grain while this is executing (there are no awaits in there)</span></span>
+<span class="line"><span>    Guid specialValue = this.CalculateSpecialValue();</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    await Task.Delay(1000); // During this 1000ms, other [AlwaysInterleave] calls can execute</span></span>
+<span class="line"><span>        </span></span>
+<span class="line"><span>    // No other code will execute on your grain while this is executing (there are no awaits)</span></span>
+<span class="line"><span>    var x = 0;</span></span>
+<span class="line"><span>    for (var i = 0; i &#x3C; 100; i++)</span></span>
+<span class="line"><span>    {</span></span>
+<span class="line"><span>        // Do some meaningless stuff</span></span>
+<span class="line"><span>        x += DateTime.UtcNow.Milliseconds;</span></span>
+<span class="line"><span>    }</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    var otherGrain = this.GrainFactory.GetGrain&#x3C;IOtherGrain>(specialValue);</span></span>
+<span class="line"><span>    var stopWatch = Stopwatch.StartNew();</span></span>
+<span class="line"><span>    </span></span>
+<span class="line"><span>    await otherGrain.Ping(); // Other [AlwaysInterleave] methods can execute while we are waiting for a response.</span></span>
+<span class="line"><span>    </span></span>
+<span class="line"><span>    var pingTime = stopWatch.ElapsedMilliseconds;</span></span>
+<span class="line"><span>    return $"It took {pingTime}ms to ping the other grain!";</span></span>
+<span class="line"><span>}</span></span></code></pre>  </article> <section class="tag-section"> <h2 class="section-title">Tags</h2> <div class="tag-list"> <a class="tag-link" href="/tags/Orleans"> Orleans </a> </div> </section> </section> </main> <footer class="site-footer"> <div class="footer-shell"> <p>Copyright &copy; 2026</p> <div class="footer-links"> <a href="/feed.rss">RSS</a> <a href="/feed.atom">Atom</a> </div> </div> </footer> </body></html>
