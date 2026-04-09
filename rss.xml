@@ -501,7 +501,7 @@ CASPaxos shines when values are modest in size. If updates routinely move large 
 &lt;h2&gt;Conclusion&lt;/h2&gt;
 &lt;p&gt;I hope you&apos;ve enjoyed the post. If you&apos;d like to discuss any aspects of it, for example some glaring inaccuracies, drop me a line via Twitter (&lt;a href=&quot;https://twitter.com/reubenbond&quot;&gt;@ReubenBond&lt;/a&gt;).&lt;/p&gt;
 &lt;p&gt;Distributed Systems is a young field with many exciting areas for research and development.&lt;/p&gt;
-</content:encoded><author>Reuben Bond</author></item><item><title>Fast CASPaxos</title><link>https://reubenbond.github.io/posts/fast-caspaxos</link><guid isPermaLink="true">https://reubenbond.github.io/posts/fast-caspaxos</guid><description>Fast Paxos-style fast rounds for a rewritable register</description><pubDate>Thu, 12 Mar 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;:::note
+</content:encoded><author>Reuben Bond</author></item><item><title>Fast CASPaxos</title><link>https://reubenbond.github.io/posts/fast-caspaxos</link><guid isPermaLink="true">https://reubenbond.github.io/posts/fast-caspaxos</guid><description>Fast Paxos-style fast rounds for a rewritable register</description><pubDate>Thu, 09 Apr 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;:::note
 &lt;strong&gt;TL;DR:&lt;/strong&gt; Fast CASPaxos adds leaderless commits to CASPaxos so that any proposer can commit an update to a shared register with a single round-trip to a quorum.
 I&apos;ve written about &lt;a href=&quot;https://reubenbond.github.io/posts/caspaxos&quot;&gt;CASPaxos&lt;/a&gt; before.
 :::&lt;/p&gt;
