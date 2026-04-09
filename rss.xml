@@ -501,4 +501,359 @@ CASPaxos shines when values are modest in size. If updates routinely move large 
 &lt;h2&gt;Conclusion&lt;/h2&gt;
 &lt;p&gt;I hope you&apos;ve enjoyed the post. If you&apos;d like to discuss any aspects of it, for example some glaring inaccuracies, drop me a line via Twitter (&lt;a href=&quot;https://twitter.com/reubenbond&quot;&gt;@ReubenBond&lt;/a&gt;).&lt;/p&gt;
 &lt;p&gt;Distributed Systems is a young field with many exciting areas for research and development.&lt;/p&gt;
+</content:encoded><author>Reuben Bond</author></item><item><title>Fast CASPaxos</title><link>https://reubenbond.github.io/posts/fast-caspaxos</link><guid isPermaLink="true">https://reubenbond.github.io/posts/fast-caspaxos</guid><description>Fast Paxos-style fast rounds for a rewritable register</description><pubDate>Thu, 12 Mar 2026 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;:::note
+&lt;strong&gt;TL;DR:&lt;/strong&gt; Fast CASPaxos adds leaderless commits to CASPaxos so that any proposer can commit an update to a shared register with a single round-trip to a quorum.
+I&apos;ve written about &lt;a href=&quot;https://reubenbond.github.io/posts/caspaxos&quot;&gt;CASPaxos&lt;/a&gt; before.
+:::&lt;/p&gt;
+&lt;h2&gt;Introduction&lt;/h2&gt;
+&lt;p&gt;Classic Paxos (aka &quot;single-decree Paxos&quot;) lets a group of servers agree on a single, &lt;strong&gt;immutable&lt;/strong&gt; value. It divides its responsibilities into two main roles: &lt;strong&gt;proposers&lt;/strong&gt;, which initiate rounds and choose candidate values, and &lt;strong&gt;acceptors&lt;/strong&gt;, which persist promises and accepted values. In most implementations, these roles are bundled together into every server, but it&apos;s common to talk about them as though they are separate processes and we won&apos;t deviate from the norm in this post.&lt;/p&gt;
+&lt;p&gt;CASPaxos extends Paxos into a rewritable register, so proposers can &lt;strong&gt;mutate&lt;/strong&gt; the value over time while maintaining strong consistency guarantees (linearizability) so that no acknowledged write is ever clobbered. Classic Paxos requires two messaging round-trips to decide on a value. That is, it operates in 2 phases:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;a &lt;code&gt;prepare&lt;/code&gt; phase where a proposer tries to become leader and learns the current state from acceptors, and&lt;/li&gt;
+&lt;li&gt;an &lt;code&gt;accept&lt;/code&gt; phase where that proposer asks acceptors to accept a value.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;A common Paxos optimization is to have each &lt;code&gt;accept&lt;/code&gt; message piggyback the next &lt;code&gt;prepare&lt;/code&gt; message so the same proposer can update the register via a single &lt;code&gt;accept+prepare&lt;/code&gt; message instead of needing two separate round-trips.&lt;/p&gt;
+&lt;p&gt;My contribution is &lt;em&gt;Fast CASPaxos&lt;/em&gt;, which &lt;strong&gt;lets any proposer update the register in a single &lt;code&gt;accept+prepare&lt;/code&gt; request&lt;/strong&gt;, not only the proposer that already holds leadership. It works by leveraging an insight from &lt;a href=&quot;https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr-2005-112.pdf&quot;&gt;Fast Paxos&lt;/a&gt;. After coming up with Fast CASPaxos and going through all of the work to propagandize myself about it through deterministic simulation testing, TLA+ models, showers, etc, I discovered that key ideas were already discovered by Heidi Howard and presented in her thesis titled &lt;a href=&quot;https://www.cl.cam.ac.uk/techreports/UCAM-CL-TR-935.pdf&quot;&gt;Distributed consensus revised&lt;/a&gt;. Still, Fast CASPaxos brings together those ideas and the core idea from CASPaxos in a way that I believe is novel and it identifies one point along the &lt;a href=&quot;https://en.wikipedia.org/wiki/Pareto_front&quot;&gt;Pareto frontier&lt;/a&gt; of optimal distributed consensus algorithms. An interesting side-point about Fast CASPaxos is that it&apos;s cheap to switch between leadered and leaderless consensus at runtime, so theoretically you could create an adaptive algorithm that lets you decide based on observed conditions (conflict rates, relative latency, available servers, etc).&lt;/p&gt;
+&lt;p&gt;The rest of the post covers leadered-vs-leaderless consensus, CASPaxos, and Fast CASPaxos.&lt;/p&gt;
+&lt;h2&gt;Leader-based vs leaderless consensus&lt;/h2&gt;
+&lt;p&gt;Classic Paxos, Multi-Paxos, Raft, and CASPaxos are all examples of leader-based consensus. In leader-based consensus, before a proposer can commit a value, it must first obtain mutually exclusive (but revocable) rights to do so. Leader election grants this right. In Paxos, the &lt;code&gt;prepare&lt;/code&gt; phase is where a proposer tries to acquire that right and the &lt;code&gt;accept&lt;/code&gt; phase is where it tries to commit a value. If leadership is uncontended then each phase typically takes 1 round-trip (one message back and forth between the proposer and acceptors). Multi-Paxos, Raft, and CASPaxos let the same proposer amortize the cost of becoming a leader by allowing it to continue committing values as long as it is uncontended. The key point is that leadership is about mutual exclusion: only one proposer at a time has the right to commit values. For CASPaxos, the gist of how this works is that every time you commit a value you piggyback leader election for the &lt;em&gt;next&lt;/em&gt; value in the same message: each &lt;code&gt;accept&lt;/code&gt; request has the next &lt;code&gt;prepare&lt;/code&gt; piggy-backed on.&lt;/p&gt;
+&lt;p&gt;Leadered and leaderless consensus both have a one-round-trip (1 RTT) fast case, but they optimize for different failure and contention patterns. Choosing which is the right approach depends on the scenario - we&apos;ll talk about some cases later.&lt;/p&gt;
+&lt;p&gt;Leadered consensus lets only the leader commit in 1 RTT. If another proposer wants to commit, it must first become the leader (1 RTT) and then commit. That&apos;s 2 RTT in total if you were to have a different proposer for each commit. If proposers are trying to commit values concurrently, they can end up contending, possibly indefinitely, trying to squeeze those 2 RTT in before the other proposer deposes them as leader. This is the &lt;em&gt;dueling proposers&lt;/em&gt; problem.&lt;/p&gt;
+&lt;p&gt;Leaderless consensus algorithms allow any proposer to commit a value without first obtaining exclusive rights. This is the crux of the Fast Paxos optimization: acceptors are prepared ahead of time for a shared &lt;strong&gt;fast round&lt;/strong&gt; in which proposers can send &lt;code&gt;accept&lt;/code&gt; requests directly to acceptors instead of first performing a &lt;code&gt;prepare&lt;/code&gt; phase. If enough acceptors receive the &lt;strong&gt;same&lt;/strong&gt; value, it commits in a single round-trip. If concurrent proposers propose &lt;strong&gt;conflicting&lt;/strong&gt; values, the protocol falls back to classic recovery (&lt;code&gt;prepare&lt;/code&gt; then &lt;code&gt;accept&lt;/code&gt;). So Fast Paxos is leaderless in fast rounds but leadered during recovery.&lt;/p&gt;
+&lt;p&gt;The cost of that leaderless fast path is a larger quorum. A later classic &lt;code&gt;prepare&lt;/code&gt; quorum must still be able to tell which value, if any, could have been committed in the fast round. In a classic ballot there is only one proposer, so the ballot identifies a single candidate value. In a fast ballot many proposers can race, so different acceptors may report different values for the same ballot. Recovery therefore has to group responses by value at the highest fast ballot it sees and choose the unique maximum, or any tied maximum. That is why fast rounds need a supermajority: not because the fast proposer needs extra votes for its own sake, but because later recovery must be unable to reinterpret the round as having decided a different value. Leaderless consensus is attractive in many scenarios, but those larger quorums and the risk of conflicts mean it generally performs worse than leadered consensus under contention, which is why the ability to switch between the two modes is appealing.&lt;/p&gt;
+&lt;h3&gt;When each mode fits best&lt;/h3&gt;
+&lt;h4&gt;Leadered&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;High write rate.&lt;/strong&gt; If one proposer is likely to drive a long sequence of updates, leadered mode amortizes prepare costs across many operations instead of paying them repeatedly.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;High conflict rate.&lt;/strong&gt; When independent proposers frequently want different next values, a leader reduces repeated proposer-versus-proposer collisions and gives more stable progress than optimistic fast rounds. To take advantage of this, you need to route requests to a stable leader.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4&gt;Leaderless&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Geo-distributed, low-conflict deployments.&lt;/strong&gt; When network latency is high, leaderless 1 RTT commits are particularly attractive, but the penalty of contention is more pronounced.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Infrequent writes.&lt;/strong&gt; When writes are infrequent and proposers have a chance to learn the latest committed value without going through consensus, fast rounds allow 1 RTT commits at any proposer.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Almost-everywhere agreement.&lt;/strong&gt; When concurrent proposers are proposing the same value anyway, shared fast rounds let them proceed without dueling. The &lt;a href=&quot;https://www.usenix.org/conference/atc18/presentation/suresh&quot;&gt;Rapid cluster membership algorithm&lt;/a&gt; uses Fast Paxos for exactly this property: Rapid&apos;s cut detector produces proposals based on observer alerts and delays action until churn stabilizes into the same multi-process cut, resulting in very low conflict rates among proposers, allowing them to commit in 1 RTT most of the time without going through a leader.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Register initialization.&lt;/strong&gt; The initial fast ballot is implicitly prepared, so the first write can skip &lt;code&gt;prepare&lt;/code&gt; entirely and go straight to &lt;code&gt;accept&lt;/code&gt;. That makes 1 RTT initialization especially attractive when a system creates many lightweight registers which may only be written once.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;When it&apos;s not clear-cut&lt;/h3&gt;
+&lt;p&gt;I&apos;ve seen arguments saying that the smaller quorum requirements of leadered protocols confer advantages like:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Reduced chance that a straggler server will slow down consensus&lt;/li&gt;
+&lt;li&gt;Improved failure masking (more servers can fail before progress stops)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Those are not unreasonable ideas, but in a leadered protocol, the leader itself can be the straggler and slow down all requests (a gray failure). If the leader crashes you need to first detect that, which is inherently slow, and then elect a new leader. That handoff naturally creates a stutter where progress pauses while the system re-establishes mutual exclusion. The system becomes temporarily unavailable during this period. Leaderless algorithms don&apos;t have these problems. Given that, these attributes are not clear-cut.&lt;/p&gt;
+&lt;h2&gt;CASPaxos&lt;/h2&gt;
+&lt;p&gt;CASPaxos implements a linearizable rewritable register. Instead of replicating an entire log of commands like Raft and MultiPaxos do, each operation has a proposer read the current register value, apply an update function locally, and replicate the resulting value to a quorum of acceptors. That makes it a good fit for small-ish blobs of strongly consistent state such as configuration, leases, and membership metadata.&lt;/p&gt;
+&lt;p&gt;Every update is protected by a ballot number. Before a proposer can overwrite the register, it has to learn the highest value which might still matter, so previously committed work cannot be clobbered blindly.&lt;/p&gt;
+&lt;p&gt;The protocol is still classic Paxos-shaped: first &lt;code&gt;prepare&lt;/code&gt; a ballot, then &lt;code&gt;accept&lt;/code&gt; a value at that ballot. The proposer can piggyback the next ballot&apos;s &lt;code&gt;prepare&lt;/code&gt; onto its successful &lt;code&gt;accept&lt;/code&gt;, letting the same proposer stay on a 1 RTT steady-state path.&lt;/p&gt;
+&lt;h3&gt;Role-local state&lt;/h3&gt;
+&lt;h4&gt;Proposer state (volatile)&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;id&lt;/code&gt;: unique proposer identifier&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;round&lt;/code&gt;: monotonically increasing, initially 0&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;prepared&lt;/code&gt;: most recently prepared ballot, initially &lt;code&gt;null&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;cachedVal&lt;/code&gt;: last decided value, initially &lt;code&gt;null&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4&gt;Acceptor state (persistent)&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;promised&lt;/code&gt;: highest ballot promised&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;accepted&lt;/code&gt;: last accepted ballot, or &lt;code&gt;null&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;value&lt;/code&gt;: last accepted value, or &lt;code&gt;null&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Phase 1: prepare&lt;/h3&gt;
+&lt;p&gt;The proposer picks a fresh ballot &lt;code&gt;b = (round, id)&lt;/code&gt; and sends &lt;code&gt;Prepare(b)&lt;/code&gt; to acceptors. An acceptor compares &lt;code&gt;b&lt;/code&gt; with its &lt;code&gt;promised&lt;/code&gt;. If &lt;code&gt;b&lt;/code&gt; is high enough, it raises &lt;code&gt;promised&lt;/code&gt; to &lt;code&gt;b&lt;/code&gt; and replies with &lt;code&gt;Promise(accepted, value)&lt;/code&gt;. Otherwise it replies with &lt;code&gt;Reject(promised)&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;To succeed, the proposer needs a quorum of &lt;code&gt;Promise&lt;/code&gt; responses. If some acceptor reports a higher ballot via &lt;code&gt;Reject(promised)&lt;/code&gt;, the proposer does &lt;strong&gt;not&lt;/strong&gt; get to ignore it and move on. It must move &lt;code&gt;round&lt;/code&gt; above the highest promised ballot it saw and retry.&lt;/p&gt;
+&lt;p&gt;Once &lt;code&gt;prepare&lt;/code&gt; succeeds, the proposer recovers the latest value which might matter:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;if no acceptor in the quorum has accepted anything, then &lt;code&gt;cachedVal = ⊥&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;otherwise, the proposer sets &lt;code&gt;cachedVal&lt;/code&gt; to the value paired with the highest &lt;code&gt;accepted&lt;/code&gt; ballot it observed&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;That recovered &lt;code&gt;cachedVal&lt;/code&gt; is the safe input to the client&apos;s update function.&lt;/p&gt;
+&lt;h3&gt;Phase 2: accept&lt;/h3&gt;
+&lt;p&gt;After &lt;code&gt;prepare&lt;/code&gt;, the proposer computes &lt;code&gt;newVal = update(cachedVal)&lt;/code&gt; and sends &lt;code&gt;Accept(b, newVal, nextBallot)&lt;/code&gt; to acceptors.&lt;/p&gt;
+&lt;p&gt;An acceptor rejects if &lt;code&gt;b&lt;/code&gt; is below its &lt;code&gt;promised&lt;/code&gt;. Otherwise it:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;stores &lt;code&gt;accepted = b&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;stores &lt;code&gt;value = newVal&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;raises &lt;code&gt;promised = max(b, nextBallot)&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;The value is committed once a quorum accepts it.&lt;/p&gt;
+&lt;p&gt;That optional &lt;code&gt;nextBallot&lt;/code&gt; field is the piggybacked-&lt;code&gt;prepare&lt;/code&gt; optimization. Instead of doing:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;code&gt;prepare&lt;/code&gt; this round&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;accept&lt;/code&gt; this round&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;prepare&lt;/code&gt; again next time&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;the proposer does:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;code&gt;prepare&lt;/code&gt; this round&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;accept&lt;/code&gt; this round &lt;strong&gt;and&lt;/strong&gt; piggyback the next ballot&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;so the same proposer can cache &lt;code&gt;prepared = nextBallot&lt;/code&gt; and skip the next standalone &lt;code&gt;prepare&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&amp;lt;figure class=&quot;protocol-cheatsheet&quot;&amp;gt;
+&amp;lt;div class=&quot;protocol-cheatsheet-columns&quot;&amp;gt;
+&amp;lt;div class=&quot;protocol-cheatsheet-column&quot;&amp;gt;
+&amp;lt;a
+class=&quot;protocol-cheatsheet-card&quot;
+href=&quot;/images/protocol-cheatsheets/caspaxos-state.png&quot;
+data-lightbox
+data-lightbox-caption=&quot;CASPaxos cheatsheet: State&quot;
+aria-label=&quot;Expand CASPaxos cheatsheet state box&quot;
+&amp;gt;
+&amp;lt;img
+src=&quot;/images/protocol-cheatsheets/caspaxos-state.png&quot;
+alt=&quot;CASPaxos cheatsheet box titled State&quot;
+loading=&quot;lazy&quot;
+/&amp;gt;
+&amp;lt;/a&amp;gt;
+&amp;lt;a
+class=&quot;protocol-cheatsheet-card&quot;
+href=&quot;/images/protocol-cheatsheets/caspaxos-rules-for-proposers.png&quot;
+data-lightbox
+data-lightbox-caption=&quot;CASPaxos cheatsheet: Rules for Proposers&quot;
+aria-label=&quot;Expand CASPaxos cheatsheet rules for proposers box&quot;
+&amp;gt;
+&amp;lt;img
+src=&quot;/images/protocol-cheatsheets/caspaxos-rules-for-proposers.png&quot;
+alt=&quot;CASPaxos cheatsheet box titled Rules for Proposers&quot;
+loading=&quot;lazy&quot;
+/&amp;gt;
+&amp;lt;/a&amp;gt;
+&amp;lt;/div&amp;gt;
+&amp;lt;div class=&quot;protocol-cheatsheet-column&quot;&amp;gt;
+&amp;lt;a
+class=&quot;protocol-cheatsheet-card&quot;
+href=&quot;/images/protocol-cheatsheets/caspaxos-ballots.png&quot;
+data-lightbox
+data-lightbox-caption=&quot;CASPaxos cheatsheet: Ballots&quot;
+aria-label=&quot;Expand CASPaxos cheatsheet ballots box&quot;
+&amp;gt;
+&amp;lt;img
+src=&quot;/images/protocol-cheatsheets/caspaxos-ballots.png&quot;
+alt=&quot;CASPaxos cheatsheet box titled Ballots&quot;
+loading=&quot;lazy&quot;
+/&amp;gt;
+&amp;lt;/a&amp;gt;
+&amp;lt;a
+class=&quot;protocol-cheatsheet-card&quot;
+href=&quot;/images/protocol-cheatsheets/caspaxos-prepare-rpc.png&quot;
+data-lightbox
+data-lightbox-caption=&quot;CASPaxos cheatsheet: Prepare RPC&quot;
+aria-label=&quot;Expand CASPaxos cheatsheet prepare RPC box&quot;
+&amp;gt;
+&amp;lt;img
+src=&quot;/images/protocol-cheatsheets/caspaxos-prepare-rpc.png&quot;
+alt=&quot;CASPaxos cheatsheet box titled Prepare RPC&quot;
+loading=&quot;lazy&quot;
+/&amp;gt;
+&amp;lt;/a&amp;gt;
+&amp;lt;a
+class=&quot;protocol-cheatsheet-card&quot;
+href=&quot;/images/protocol-cheatsheets/caspaxos-accept-rpc.png&quot;
+data-lightbox
+data-lightbox-caption=&quot;CASPaxos cheatsheet: Accept RPC&quot;
+aria-label=&quot;Expand CASPaxos cheatsheet accept RPC box&quot;
+&amp;gt;
+&amp;lt;img
+src=&quot;/images/protocol-cheatsheets/caspaxos-accept-rpc.png&quot;
+alt=&quot;CASPaxos cheatsheet box titled Accept RPC&quot;
+loading=&quot;lazy&quot;
+/&amp;gt;
+&amp;lt;/a&amp;gt;
+&amp;lt;/div&amp;gt;
+&amp;lt;/div&amp;gt;
+&amp;lt;figcaption&amp;gt;
+CASPaxos cheatsheet
+&amp;lt;/figcaption&amp;gt;
+&amp;lt;/figure&amp;gt;&lt;/p&gt;
+&lt;p&gt;The important bits are that &lt;code&gt;prepare&lt;/code&gt; is what protects prior work by forcing a proposer to learn the highest value which might still matter, &lt;code&gt;accept&lt;/code&gt; is the only step which actually commits a new value, and piggybacking the next ballot does not commit anything by itself; it only prepares the following round.&lt;/p&gt;
+&lt;h2&gt;Fast CASPaxos&lt;/h2&gt;
+&lt;p&gt;Everything above used classic proposer-owned ballots. Fast CASPaxos keeps the same proposer and acceptor roles, the same persistent acceptor state, and the same &lt;code&gt;prepare&lt;/code&gt;/&lt;code&gt;accept&lt;/code&gt; structure. The core changes relative to CASPaxos are:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;ballots with &lt;code&gt;proposerId = 0&lt;/code&gt; are shared fast ballots, so any proposer may use them&lt;/li&gt;
+&lt;li&gt;a piggybacked next ballot can therefore prepare either the next proposer-owned classic ballot or the next shared fast ballot&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;prepare&lt;/code&gt; still uses a classic majority, but &lt;code&gt;accept&lt;/code&gt; at a fast ballot needs a larger fast quorum&lt;/li&gt;
+&lt;li&gt;within a fast ballot, acceptors are first-write-wins: they accept the first value they see at that ballot and reject later different values&lt;/li&gt;
+&lt;li&gt;if a later &lt;code&gt;prepare&lt;/code&gt; sees that the highest accepted ballot was fast, it tallies values at that ballot and carries forward the unique maximum, or any tied maximum&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;That is enough to turn CASPaxos into Fast CASPaxos without changing acceptor state. If two proposers send different values in the same fast ballot, neither reaches the fast quorum, so the protocol falls back to a classic recovery round which applies that tally rule. The cheatsheet and sketch below summarize the core protocol; the later subsections cover practical refinements and optimizations.&lt;/p&gt;
+&lt;p&gt;Here is the corresponding Fast CASPaxos protocol summary from the paper:&lt;/p&gt;
+&lt;p&gt;&amp;lt;figure class=&quot;protocol-cheatsheet&quot;&amp;gt;
+&amp;lt;div class=&quot;protocol-cheatsheet-columns&quot;&amp;gt;
+&amp;lt;div class=&quot;protocol-cheatsheet-column&quot;&amp;gt;
+&amp;lt;a
+class=&quot;protocol-cheatsheet-card&quot;
+href=&quot;/images/protocol-cheatsheets/fast-caspaxos-state.png&quot;
+data-lightbox
+data-lightbox-caption=&quot;Fast CASPaxos cheatsheet: State&quot;
+aria-label=&quot;Expand Fast CASPaxos cheatsheet state box&quot;
+&amp;gt;
+&amp;lt;img
+src=&quot;/images/protocol-cheatsheets/fast-caspaxos-state.png&quot;
+alt=&quot;Fast CASPaxos cheatsheet box titled State&quot;
+loading=&quot;lazy&quot;
+/&amp;gt;
+&amp;lt;/a&amp;gt;
+&amp;lt;a
+class=&quot;protocol-cheatsheet-card&quot;
+href=&quot;/images/protocol-cheatsheets/fast-caspaxos-rules-for-proposers.png&quot;
+data-lightbox
+data-lightbox-caption=&quot;Fast CASPaxos cheatsheet: Rules for Proposers&quot;
+aria-label=&quot;Expand Fast CASPaxos cheatsheet rules for proposers box&quot;
+&amp;gt;
+&amp;lt;img
+src=&quot;/images/protocol-cheatsheets/fast-caspaxos-rules-for-proposers.png&quot;
+alt=&quot;Fast CASPaxos cheatsheet box titled Rules for Proposers&quot;
+loading=&quot;lazy&quot;
+/&amp;gt;
+&amp;lt;/a&amp;gt;
+&amp;lt;/div&amp;gt;
+&amp;lt;div class=&quot;protocol-cheatsheet-column&quot;&amp;gt;
+&amp;lt;a
+class=&quot;protocol-cheatsheet-card&quot;
+href=&quot;/images/protocol-cheatsheets/fast-caspaxos-ballots.png&quot;
+data-lightbox
+data-lightbox-caption=&quot;Fast CASPaxos cheatsheet: Ballots&quot;
+aria-label=&quot;Expand Fast CASPaxos cheatsheet ballots box&quot;
+&amp;gt;
+&amp;lt;img
+src=&quot;/images/protocol-cheatsheets/fast-caspaxos-ballots.png&quot;
+alt=&quot;Fast CASPaxos cheatsheet box titled Ballots&quot;
+loading=&quot;lazy&quot;
+/&amp;gt;
+&amp;lt;/a&amp;gt;
+&amp;lt;a
+class=&quot;protocol-cheatsheet-card&quot;
+href=&quot;/images/protocol-cheatsheets/fast-caspaxos-prepare-rpc.png&quot;
+data-lightbox
+data-lightbox-caption=&quot;Fast CASPaxos cheatsheet: Prepare RPC&quot;
+aria-label=&quot;Expand Fast CASPaxos cheatsheet prepare RPC box&quot;
+&amp;gt;
+&amp;lt;img
+src=&quot;/images/protocol-cheatsheets/fast-caspaxos-prepare-rpc.png&quot;
+alt=&quot;Fast CASPaxos cheatsheet box titled Prepare RPC&quot;
+loading=&quot;lazy&quot;
+/&amp;gt;
+&amp;lt;/a&amp;gt;
+&amp;lt;a
+class=&quot;protocol-cheatsheet-card&quot;
+href=&quot;/images/protocol-cheatsheets/fast-caspaxos-accept-rpc.png&quot;
+data-lightbox
+data-lightbox-caption=&quot;Fast CASPaxos cheatsheet: Accept RPC&quot;
+aria-label=&quot;Expand Fast CASPaxos cheatsheet accept RPC box&quot;
+&amp;gt;
+&amp;lt;img
+src=&quot;/images/protocol-cheatsheets/fast-caspaxos-accept-rpc.png&quot;
+alt=&quot;Fast CASPaxos cheatsheet box titled Accept RPC&quot;
+loading=&quot;lazy&quot;
+/&amp;gt;
+&amp;lt;/a&amp;gt;
+&amp;lt;/div&amp;gt;
+&amp;lt;/div&amp;gt;
+&amp;lt;figcaption&amp;gt;
+Fast CASPaxos cheatsheet
+&amp;lt;/figcaption&amp;gt;
+&amp;lt;/figure&amp;gt;&lt;/p&gt;
+&lt;h3&gt;Protocol sketch&lt;/h3&gt;
+&lt;p&gt;This is simplified to show the core protocol only. It omits duplicate-message handling, cached local views, and the best-effort learn path.&lt;/p&gt;
+&lt;p&gt;Notation:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;ballots are &lt;code&gt;(round, proposerId)&lt;/code&gt;, where &lt;code&gt;proposerId = 0&lt;/code&gt; denotes the shared fast ballot for that round&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;prepareQuorum = classicQuorum = floor(N / 2) + 1&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;fastQuorum = ceil(3N / 4)&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;acceptQuorumFor(ballot) = fastQuorum&lt;/code&gt; for fast ballots and &lt;code&gt;classicQuorum&lt;/code&gt; for classic ballots&lt;/li&gt;
+&lt;li&gt;every &lt;code&gt;prepare&lt;/code&gt; response returns &lt;code&gt;(acceptedBallot, acceptedValue, maxBallot)&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;prepare(b)&lt;/code&gt; succeeds at an acceptor exactly when the response reports &lt;code&gt;maxBallot = b&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4&gt;Proposer&lt;/h4&gt;
+&lt;pre&gt;&lt;code&gt;function propose(update):
+    b := initial ballot to try
+
+    loop:
+        if b is not already prepared:
+            responses := collect Prepare(b) responses
+            if responses with maxBallot == b do not reach prepareQuorum:
+                b := next classic ballot above the highest maxBallot returned
+                continue
+
+            currentValue := recoverValue(responses)
+        else:
+            currentValue := previously learned value for b
+
+        newValue := update(currentValue)
+        next := optional next ballot to piggyback
+
+        responses := collect Accept(b, newValue, next) responses
+        if accepts in responses reach acceptQuorumFor(b):
+            return newValue
+
+        b := next classic ballot above the highest conflicting ballot returned
+
+function recoverValue(responses):
+    highest := maximum acceptedBallot reported in the responses
+
+    if highest == ⊥:
+        return ⊥
+
+    if highest is a classic ballot:
+        return the value paired with highest
+
+    // highest is a fast ballot, so several values may appear at that ballot
+    votes := count values among responses whose acceptedBallot == highest
+    return any value tied for the largest count
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Notes:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;prepare&lt;/code&gt; always needs only a classic majority. The larger quorum is only for fast &lt;code&gt;accept&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;A proposer only reuses &lt;code&gt;next&lt;/code&gt; if enough successful &lt;code&gt;accept&lt;/code&gt; responses confirm that the promise really landed.&lt;/li&gt;
+&lt;li&gt;In practice, a proposer only skips &lt;code&gt;prepare&lt;/code&gt; when it already has a prepared ballot and enough local knowledge to compute &lt;code&gt;newValue&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4&gt;Acceptor&lt;/h4&gt;
+&lt;pre&gt;&lt;code&gt;state:
+    promisedBallot := (1, 0)       // initial fast ballot is implicitly prepared
+    acceptedBallot := ⊥
+    acceptedValue := ⊥
+
+function onPrepare(b):
+    if b &amp;gt;= promisedBallot:
+        promisedBallot := b
+    reply prepareResponse(acceptedBallot, acceptedValue, promisedBallot)
+
+function onAccept(b, v, next):
+    maxBallot := max(promisedBallot, acceptedBallot)
+    if b &amp;lt; maxBallot:
+        reply reject(maxBallot)
+        return
+
+    // Optimization: idempotency from possibly multiple proposers
+    if b == acceptedBallot and v == acceptedValue:
+        reply accept(promisedBallot)
+        return
+
+    if b == acceptedBallot and v != acceptedValue:
+        reply reject(maxBallot)
+        return
+
+    acceptedBallot := b
+    acceptedValue := v
+
+    if next != none:
+        promisedBallot := max(promisedBallot, next)
+
+    reply accept(promisedBallot)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Concurrently committing identical values&lt;/h3&gt;
+&lt;p&gt;First-write-wins only rules out &lt;em&gt;different&lt;/em&gt; values at the same fast ballot. To avoid treating identical concurrent proposals as conflicts, acceptors still acknowledge an &lt;code&gt;accept&lt;/code&gt; request which exactly matches their current accepted ballot and value. That keeps almost-everywhere-agreement workloads efficient without changing state.&lt;/p&gt;
+&lt;p&gt;In classic rounds, the same behavior also makes &lt;code&gt;accept&lt;/code&gt; retries idempotent.&lt;/p&gt;
+&lt;h3&gt;Register initialization&lt;/h3&gt;
+&lt;p&gt;To allow proposers to initialize a register in 1 RTT, they start with the &lt;code&gt;accept&lt;/code&gt; phase for the initial fast round, &lt;code&gt;(1, 0)&lt;/code&gt;. This way, either they can have their initial value committed if there is no contention, or they will learn of the conflicting ballot and can retry at the &lt;code&gt;prepare&lt;/code&gt; phase. Acceptors are initialized with a promised ballot of &lt;code&gt;(1, 0)&lt;/code&gt;.&lt;/p&gt;
+&lt;h3&gt;Reusing a piggybacked ballot safely&lt;/h3&gt;
+&lt;p&gt;Piggybacking a next ballot is only a latency optimization. A proposer may skip a standalone &lt;code&gt;prepare&lt;/code&gt; on its next operation only if a quorum of successful &lt;code&gt;accept&lt;/code&gt; responses confirms that the requested &lt;code&gt;next&lt;/code&gt; ballot was actually promised. If only some acceptors echoed it, the proposer discards that candidate ballot and falls back to &lt;code&gt;prepare&lt;/code&gt;.&lt;/p&gt;
+&lt;h3&gt;Learning decided values&lt;/h3&gt;
+&lt;p&gt;A proposer may send &lt;code&gt;Accept(b, v, next)&lt;/code&gt; only if it already knows the register value for &lt;code&gt;b&lt;/code&gt;. It can learn that value by running &lt;code&gt;prepare&lt;/code&gt;, by committing and reusing the piggybacked next ballot, or via a best-effort learn notification from another proposer.&lt;/p&gt;
+&lt;p&gt;Learn traffic is only an optimization. If that notification is stale or missing, the proposer falls back to &lt;code&gt;prepare&lt;/code&gt;.&lt;/p&gt;
+&lt;h3&gt;Do we even need classic rounds?&lt;/h3&gt;
+&lt;p&gt;Fast CASPaxos could be generalized further to only use fast rounds, and never fall back to classic rounds. &lt;a href=&quot;https://www.cl.cam.ac.uk/techreports/UCAM-CL-TR-935.pdf&quot;&gt;Distributed consensus revised&lt;/a&gt; contains the necessary relaxations/generalizations. On the other hand, having distinct leadered vs leaderless rounds confers higher fault tolerance and it&apos;s arguably less of a leap for people familiar with Classic Paxos already.&lt;/p&gt;
+&lt;h2&gt;Conclusion&lt;/h2&gt;
+&lt;p&gt;Fast CASPaxos is a small extension to CASPaxos that implements a leaderless linearizable register. It&apos;s conceptually a blend of Fast Paxos and CASPaxos. It&apos;s likely most useful for consistent group membership (eg, Rapid) and metadata replication (eg, &lt;a href=&quot;https://engineering.fb.com/2019/06/06/data-center-engineering/delos/&quot;&gt;Delos&lt;/a&gt; and other &lt;a href=&quot;https://medium.com/@adamprout/categorizing-how-distributed-databases-utilize-consensus-algorithms-492c8ff9e916&quot;&gt;Consensus for Metadata&lt;/a&gt; systems (which is a lot, btw)). I&apos;m happy to have scratched this itch that has been bugging me for a long time.&lt;/p&gt;
+&lt;p&gt;I uploaded a draft PDF of a &lt;a href=&quot;https://github.com/ReubenBond/fast-caspaxos/blob/main/paper/fast-caspaxos.pdf&quot;&gt;paper&lt;/a&gt; on Fast CASPaxos. The accompanying &lt;a href=&quot;https://github.com/ReubenBond/fast-caspaxos&quot;&gt;repository&lt;/a&gt; also includes a &lt;a href=&quot;https://github.com/ReubenBond/fast-caspaxos/tree/main/tla&quot;&gt;TLA+ model checked with TLC&lt;/a&gt;, a deterministic simulation suite with Porcupine linearizability checking, and some toy &lt;a href=&quot;https://github.com/ReubenBond/fast-caspaxos#benchmarking&quot;&gt;benchmark workloads&lt;/a&gt; for various scenarios topologies. When reading the code, note that while I spent time on the core (proposer, acceptor, types, etc), a lot of what surrounds it is generated by coding agents, especially the benchmark harness.&lt;/p&gt;
 </content:encoded><author>Reuben Bond</author></item></channel></rss>

@@ -1,0 +1,1 @@
+import{s as r,c as s,a as e,C as t}from"./chunk-WL4C6EOR.BP5V7JkV.js";import{_ as l}from"./MermaidLoader.astro_astro_type_script_index_0_lang.ByEbUKDN.js";var d={parser:e,get db(){return new t},renderer:s,styles:r,init:l(a=>{a.class||(a.class={}),a.class.arrowMarkerAbsolute=a.arrowMarkerAbsolute},"init")};export{d as diagram};
